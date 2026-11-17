@@ -15,7 +15,7 @@ export const AppIcon: React.FC<{ collapsed?: boolean; size?: number }> = ({
       alignItems="center"
       justifyContent="flex-start"
       component={Link}
-      to="/requests"
+      to="/"
       sx={{
         // Dark mode: beri background terang di belakang logo supaya tetap kontras
         // tanpa mengubah warna asli logo.
@@ -26,10 +26,17 @@ export const AppIcon: React.FC<{ collapsed?: boolean; size?: number }> = ({
         display: "inline-flex",
       }}
     >
-      <img
-        src={collapsed ? "/logo.png" : "/logo.png"}
-        width={collapsed ? 25 : size}
-        style={{ display: "block" }}
+      <Box
+        component="img"
+        src="/logo.png"
+        sx={{
+          display: "block",
+          width: collapsed
+            ? 25
+            : { xs: Math.min(size, 80), sm: Math.min(size, 100), md: size },
+          height: "auto",
+          maxWidth: "100%",
+        }}
       />
     </Box>
   );

@@ -12,6 +12,8 @@ import {
   FormControlLabel,
   Switch,
   LinearProgress,
+  Slider,
+  Stack,
 } from "@mui/material";
 import { useForm } from "@refinedev/react-hook-form";
 import { IResourceComponentsProps, useNotification } from "@refinedev/core";
@@ -24,6 +26,8 @@ import { useGetIdentity } from "@refinedev/core";
 import { IUser } from "../../components/header";
 import { supabaseClient } from "../../utility";
 import { v4 as uuidv4 } from "uuid";
+import Divider from "@mui/material/Divider";
+import Alert from "@mui/material/Alert";
 
 export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
   const { data: user } = useGetIdentity<IUser>();
@@ -31,6 +35,9 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCardImage, setUploadingCardImage] = useState(false);
+  const [previewCardImageUrl, setPreviewCardImageUrl] = useState<string | null>(null);
+  const cardFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     saveButtonProps,
@@ -61,6 +68,10 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
   const replyPrefix = watch("reply_prefix");
   const rsvpTitle = watch("rsvp_title");
   const questionLabel = watch("question_label");
+  const cardImage = watch("card_image");
+  const cardImageX = watch("card_image_x");
+  const cardImageY = watch("card_image_y");
+  const cardImageWidth = watch("card_image_width");
 
   useEffect(() => {
     setValue("secondary_color", "#F9F4D7");
@@ -148,6 +159,57 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      open?.({ type: "error", key: "card-img-type", message: "Format tidak didukung", description: "Gunakan JPG, PNG, atau WebP." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      open?.({ type: "error", key: "card-img-size", message: "File terlalu besar", description: "Maksimal 5 MB." });
+      return;
+    }
+
+    setUploadingCardImage(true);
+    try {
+      const { data: authData } = await (supabaseClient as any).auth.getUser();
+      const uid = authData?.user?.id;
+      if (!uid) throw new Error("Sesi login tidak ditemukan.");
+
+      const ext = file.name.split(".").pop();
+      const path = `${uid}/card-${uuidv4()}.${ext}`;
+      const { error } = await (supabaseClient as any).storage
+        .from("backgrounds")
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      const { data: urlData } = (supabaseClient as any).storage
+        .from("backgrounds")
+        .getPublicUrl(path);
+      const publicUrl = urlData?.publicUrl as string;
+
+      setValue("card_image", publicUrl);
+      if (cardImageX == null) setValue("card_image_x", 50);
+      if (cardImageY == null) setValue("card_image_y", 15);
+      if (cardImageWidth == null) setValue("card_image_width", 35);
+      setPreviewCardImageUrl(publicUrl);
+      open?.({ type: "success", key: "card-img-ok", message: "Gambar kartu diunggah" });
+    } catch (err: any) {
+      open?.({ type: "error", key: "card-img-err", message: "Gagal mengunggah", description: err?.message ?? "Terjadi kesalahan." });
+    } finally {
+      setUploadingCardImage(false);
+    }
+  };
+
+  const handleRemoveCardImage = () => {
+    setValue("card_image", null);
+    setPreviewCardImageUrl(null);
+    if (cardFileInputRef.current) cardFileInputRef.current.value = "";
+  };
+
   return (
     <Create
       isLoading={formLoading}
@@ -198,6 +260,16 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
             replyPrefix={replyPrefix}
             rsvpTitle={rsvpTitle}
             questionLabel={questionLabel}
+            cardImage={previewCardImageUrl}
+            cardImageX={cardImageX}
+            cardImageY={cardImageY}
+            cardImageWidth={cardImageWidth}
+            editableImage={!!previewCardImageUrl}
+            onCardImageChange={(pos) => {
+              setValue("card_image_x", pos.x);
+              setValue("card_image_y", pos.y);
+              setValue("card_image_width", pos.width);
+            }}
           />
         </Background>
       </Box>
@@ -429,6 +501,63 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
             )}
           </Grid>
 
+          {/* Card Image Upload (overlay on card) */}
+          <Grid item xs={12}>
+            <Typography fontSize={16} fontWeight="medium" mb={1}>
+              Gambar di Kartu (JPG/PNG/WebP, maks 5 MB)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+              Setelah upload, seret gambar langsung di preview atas untuk ubah posisi.
+            </Typography>
+            {uploadingCardImage && <LinearProgress sx={{ mb: 1 }} />}
+            <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
+              <Button
+                variant="outlined"
+                component="label"
+                disabled={uploadingCardImage}
+                size="small"
+              >
+                {previewCardImageUrl ? "Ganti Gambar" : "Pilih Gambar"}
+                <input
+                  ref={cardFileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCardImageUpload}
+                />
+              </Button>
+              {previewCardImageUrl && (
+                <Button
+                  variant="text"
+                  color="error"
+                  size="small"
+                  onClick={handleRemoveCardImage}
+                >
+                  Hapus Gambar
+                </Button>
+              )}
+            </Box>
+            {previewCardImageUrl && (
+              <Stack mt={2} gap={1}>
+                <Typography variant="caption" fontWeight={600}>
+                  Ukuran gambar ({Math.round(cardImageWidth ?? 35)}%)
+                </Typography>
+                <Slider
+                  value={cardImageWidth ?? 35}
+                  min={10}
+                  max={100}
+                  step={1}
+                  onChange={(_, v) => setValue("card_image_width", v as number)}
+                  valueLabelDisplay="auto"
+                />
+              </Stack>
+            )}
+            <input type="hidden" {...register("card_image")} />
+            <input type="hidden" {...register("card_image_x", { valueAsNumber: true })} />
+            <input type="hidden" {...register("card_image_y", { valueAsNumber: true })} />
+            <input type="hidden" {...register("card_image_width", { valueAsNumber: true })} />
+          </Grid>
+
           <Grid item xs={8}>
             <FormControl fullWidth>
               <InputLabel id="font_family">Font</InputLabel>
@@ -469,6 +598,18 @@ export const RequestCreate: React.FC<IResourceComponentsProps> = () => {
           </Grid>
         </Grid>
       </Grid>
+
+      <Divider sx={{ my: 4 }} />
+      <Stack gap={2}>
+        <Typography fontSize={24} fontWeight="semibold">
+          Pertanyaan Survey
+        </Typography>
+        <Alert severity="info">
+          Simpan undangan terlebih dahulu untuk menambahkan pertanyaan dan opsi
+          jawaban. Setelah tersimpan, Anda dapat mengelola pertanyaan di halaman
+          Edit.
+        </Alert>
+      </Stack>
     </Create>
   );
 };

@@ -39,6 +39,7 @@ const accessControlProvider: AccessControlProvider = {
 };
 import { RequestList } from "./pages/requests/list";
 import { RequestCreate } from "./pages/requests/create";
+import { RequestEdit } from "./pages/requests/edit";
 import { RequestShow } from "./pages/requests/show";
 import { ResponseCreate } from "./pages/responses/create";
 import { AppIcon } from "./components/app-icon";
@@ -85,6 +86,7 @@ function App() {
                     name: "requests",
                     list: "/requests",
                     create: "/requests/create",
+                    edit: "/requests/edit/:id",
                     show: "/requests/show/:id",
                     icon: <RsvpIcon />,
                     meta: {
@@ -128,6 +130,7 @@ function App() {
                     <Route path="/requests">
                       <Route index element={<RequestList />} />
                       <Route path="create" element={<RequestCreate />} />
+                      <Route path="edit/:id" element={<RequestEdit />} />
                       <Route path="show/:id" element={<RequestShow />} />
                       <Route path=":id/invitations" element={<InvitationListPage />} />
                     </Route>

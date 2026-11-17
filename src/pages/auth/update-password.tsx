@@ -7,7 +7,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useUpdatePassword } from "@refinedev/core";
+import { useUpdatePassword, useTranslate } from "@refinedev/core";
 import { AppIcon } from "../../components/app-icon";
 import PasswordField from "../../components/password-field";
 import AuthShell from "./auth-shell";
@@ -19,6 +19,7 @@ export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [mismatch, setMismatch] = useState(false);
+  const t = useTranslate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,31 +38,31 @@ export default function UpdatePasswordPage() {
           <Stack alignItems="center" mb={3}>
             <AppIcon />
             <Typography variant="h5" fontWeight="bold" mt={1}>
-              Password Baru
+              {t("pages.updatePassword.heading")}
             </Typography>
             <Typography variant="caption" color="text.secondary" textAlign="center" mt={1}>
-              Masukkan password baru untuk akun Anda.
+              {t("pages.updatePassword.subtitle")}
             </Typography>
           </Stack>
           {mismatch && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              Password tidak cocok dengan konfirmasi.
+              {t("pages.updatePassword.errors.mismatch")}
             </Alert>
           )}
           <form onSubmit={handleSubmit}>
             <Stack gap={2}>
               <PasswordField
-                label="Password Baru"
+                label={t("pages.updatePassword.fields.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 fullWidth
                 autoFocus
                 required
-                helperText="Minimal 6 karakter"
+                helperText={t("pages.updatePassword.passwordHelp")}
                 autoComplete="new-password"
               />
               <PasswordField
-                label="Konfirmasi Password"
+                label={t("pages.updatePassword.fields.confirm")}
                 value={confirm}
                 onChange={(e) => {
                   setConfirm(e.target.value);
@@ -78,7 +79,9 @@ export default function UpdatePasswordPage() {
                 size="large"
                 disabled={isLoading}
               >
-                {isLoading ? "Menyimpan..." : "Simpan Password"}
+                {isLoading
+                  ? t("pages.updatePassword.buttons.saving")
+                  : t("pages.updatePassword.buttons.save")}
               </Button>
             </Stack>
           </form>

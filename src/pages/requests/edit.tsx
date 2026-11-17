@@ -1,0 +1,592 @@
+import { Edit } from "@refinedev/mui";
+import {
+  Box,
+  Grid,
+  TextField,
+  Typography,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControl,
+  Button,
+  FormControlLabel,
+  Switch,
+  LinearProgress,
+  Slider,
+  Stack,
+} from "@mui/material";
+import { useForm } from "@refinedev/react-hook-form";
+import { IResourceComponentsProps, useNotification } from "@refinedev/core";
+import { useEffect, useState, useRef } from "react";
+import { RequestCard } from "../../components/request-card";
+import fonts from "../../utility/fonts";
+import Background from "../../components/request-card/background";
+import { supabaseClient } from "../../utility";
+import { v4 as uuidv4 } from "uuid";
+import QuestionManager from "../../components/questions/question-manager";
+import Divider from "@mui/material/Divider";
+
+export const RequestEdit: React.FC<IResourceComponentsProps> = () => {
+  const { open } = useNotification();
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCardImage, setUploadingCardImage] = useState(false);
+  const [previewCardImageUrl, setPreviewCardImageUrl] = useState<string | null>(null);
+  const cardFileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    saveButtonProps,
+    refineCore: { formLoading, queryResult },
+    register,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm();
+
+  const record = queryResult?.data?.data;
+
+  // Sync existing image into local preview state once record loads
+  useEffect(() => {
+    if (record?.background_image) {
+      setPreviewImageUrl(record.background_image);
+    }
+    if (record?.card_image) {
+      setPreviewCardImageUrl(record.card_image);
+    }
+  }, [record?.background_image, record?.card_image]);
+
+  const title = watch("title");
+  const address = watch("address");
+  const closeDate = watch("close_date");
+  const limit = watch("limit");
+  const acceptanceLabel = watch("acceptance_label");
+  const rejectionLabel = watch("rejection_label");
+  const secondaryColor = watch("secondary_color");
+  const primaryColor = watch("primary_color");
+  const fontFamily = watch("font_family");
+  const backgroundColor = watch("background_color");
+  const italicize = watch("italicize");
+  const secondary_gradient = watch("secondary_gradient");
+  const background_gradient = watch("background_gradient");
+  const style = watch("style");
+  const customMessage = watch("custom_message");
+  const replyPrefix = watch("reply_prefix");
+  const rsvpTitle = watch("rsvp_title");
+  const questionLabel = watch("question_label");
+  const cardImage = watch("card_image");
+  const cardImageX = watch("card_image_x");
+  const cardImageY = watch("card_image_y");
+  const cardImageWidth = watch("card_image_width");
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      open?.({
+        type: "error",
+        key: "img-type",
+        message: "Format tidak didukung",
+        description: "Gunakan file JPG, PNG, atau WebP.",
+      });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      open?.({
+        type: "error",
+        key: "img-size",
+        message: "File terlalu besar",
+        description: "Ukuran maksimal adalah 5 MB.",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { data: authData } = await (supabaseClient as any).auth.getUser();
+      const uid = authData?.user?.id;
+      if (!uid)
+        throw new Error("Sesi login tidak ditemukan. Silakan login ulang.");
+
+      const ext = file.name.split(".").pop();
+      const path = `${uid}/${uuidv4()}.${ext}`;
+      const { error } = await (supabaseClient as any).storage
+        .from("backgrounds")
+        .upload(path, file, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: urlData } = (supabaseClient as any).storage
+        .from("backgrounds")
+        .getPublicUrl(path);
+
+      const publicUrl = urlData?.publicUrl as string;
+      setValue("background_image", publicUrl, { shouldDirty: true });
+      setPreviewImageUrl(publicUrl);
+      open?.({
+        type: "success",
+        key: "img-ok",
+        message: "Gambar berhasil diunggah",
+        description: "Latar belakang telah diperbarui.",
+      });
+    } catch (err: any) {
+      open?.({
+        type: "error",
+        key: "img-err",
+        message: "Gagal mengunggah",
+        description: err?.message ?? "Terjadi kesalahan.",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setValue("background_image", null, { shouldDirty: true });
+    setPreviewImageUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      open?.({ type: "error", key: "card-img-type", message: "Format tidak didukung", description: "Gunakan JPG, PNG, atau WebP." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      open?.({ type: "error", key: "card-img-size", message: "File terlalu besar", description: "Maksimal 5 MB." });
+      return;
+    }
+
+    setUploadingCardImage(true);
+    try {
+      const { data: authData } = await (supabaseClient as any).auth.getUser();
+      const uid = authData?.user?.id;
+      if (!uid) throw new Error("Sesi login tidak ditemukan.");
+
+      const ext = file.name.split(".").pop();
+      const path = `${uid}/card-${uuidv4()}.${ext}`;
+      const { error } = await (supabaseClient as any).storage
+        .from("backgrounds")
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      const { data: urlData } = (supabaseClient as any).storage
+        .from("backgrounds")
+        .getPublicUrl(path);
+      const publicUrl = urlData?.publicUrl as string;
+
+      setValue("card_image", publicUrl, { shouldDirty: true });
+      if (cardImageX == null) setValue("card_image_x", 50, { shouldDirty: true });
+      if (cardImageY == null) setValue("card_image_y", 15, { shouldDirty: true });
+      if (cardImageWidth == null) setValue("card_image_width", 35, { shouldDirty: true });
+      setPreviewCardImageUrl(publicUrl);
+      open?.({ type: "success", key: "card-img-ok", message: "Gambar kartu diunggah" });
+    } catch (err: any) {
+      open?.({ type: "error", key: "card-img-err", message: "Gagal mengunggah", description: err?.message ?? "Terjadi kesalahan." });
+    } finally {
+      setUploadingCardImage(false);
+    }
+  };
+
+  const handleRemoveCardImage = () => {
+    setValue("card_image", null, { shouldDirty: true });
+    setPreviewCardImageUrl(null);
+    if (cardFileInputRef.current) cardFileInputRef.current.value = "";
+  };
+
+  return (
+    <Edit isLoading={formLoading} saveButtonProps={saveButtonProps}>
+      <Box marginBottom={4}>
+        <Box mb={2}>
+          <Typography component="h2" fontSize={24}>
+            Preview
+          </Typography>
+        </Box>
+        <Background
+          backgroundColor={backgroundColor}
+          backgroundImage={previewImageUrl}
+          background_gradient={background_gradient}
+        >
+          <RequestCard
+            backgroundColor={backgroundColor}
+            title={title}
+            address={address}
+            acceptanceLabel={acceptanceLabel}
+            rejectionLabel={rejectionLabel}
+            closeDate={closeDate}
+            secondaryColor={secondaryColor}
+            primaryColor={primaryColor}
+            limit={limit}
+            fontFamily={fontFamily}
+            italicize={italicize}
+            secondary_gradient={secondary_gradient}
+            background_gradient={background_gradient}
+            style={style}
+            customMessage={customMessage}
+            replyPrefix={replyPrefix}
+            rsvpTitle={rsvpTitle}
+            questionLabel={questionLabel}
+            cardImage={previewCardImageUrl}
+            cardImageX={cardImageX}
+            cardImageY={cardImageY}
+            cardImageWidth={cardImageWidth}
+            editableImage={!!previewCardImageUrl}
+            onCardImageChange={(pos) => {
+              setValue("card_image_x", pos.x, { shouldDirty: true });
+              setValue("card_image_y", pos.y, { shouldDirty: true });
+              setValue("card_image_width", pos.width, { shouldDirty: true });
+            }}
+          />
+        </Background>
+      </Box>
+
+      <Grid component="form" autoComplete="off" container spacing={2}>
+        {/* General Info */}
+        <Grid container item xs={12} md={6} spacing={2} flex={1}>
+          <Grid item xs={12}>
+            <Typography fontSize={24} fontWeight="semibold">
+              Informasi Umum
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("title", { required: "Harus diisi" })}
+              error={!!(errors as any)?.title}
+              helperText={(errors as any)?.title?.message}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label="Judul Acara"
+              name="title"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("address", { required: "Harus diisi" })}
+              error={!!(errors as any)?.address}
+              helperText={(errors as any)?.address?.message}
+              fullWidth
+              multiline
+              rows={3}
+              InputLabelProps={{ shrink: true }}
+              label="Lokasi / Tempat"
+              name="address"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("custom_message")}
+              fullWidth
+              multiline
+              rows={3}
+              InputLabelProps={{ shrink: true }}
+              label="Pesan Tambahan (opsional)"
+              name="custom_message"
+              placeholder="Contoh: Dresscode putih. Acara dimulai pukul 09.00 WIB."
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              {...register("acceptance_label", { required: "Harus diisi" })}
+              error={!!(errors as any)?.acceptance_label}
+              helperText={(errors as any)?.acceptance_label?.message}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label="Label Hadir"
+              name="acceptance_label"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              {...register("rejection_label", { required: "Harus diisi" })}
+              error={!!(errors as any)?.rejection_label}
+              helperText={(errors as any)?.rejection_label?.message}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label="Label Tidak Hadir"
+              name="rejection_label"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              {...register("limit", {
+                required: "Harus diisi",
+                valueAsNumber: true,
+              })}
+              error={!!(errors as any)?.limit}
+              helperText={(errors as any)?.limit?.message}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              type="number"
+              label="Batas Tamu"
+              name="limit"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              {...register("close_date", { required: "Harus diisi" })}
+              error={!!(errors as any)?.close_date}
+              helperText={(errors as any)?.close_date?.message}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              type="date"
+              label="Batas RSVP"
+              name="close_date"
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Typography fontSize={18} fontWeight="semibold" mt={1}>
+              Teks Undangan
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("rsvp_title")}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label='Judul RSVP (default: "RSVP")'
+              name="rsvp_title"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("reply_prefix")}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label='Teks sebelum tanggal (default: "Kindly Reply Before")'
+              name="reply_prefix"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("question_label")}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              label='Pertanyaan kehadiran (default: "Are you going?")'
+              name="question_label"
+            />
+          </Grid>
+        </Grid>
+
+        {/* Visual */}
+        <Grid container item xs={12} md={6} spacing={2} alignContent="flex-start">
+          <Grid item xs={12}>
+            <Typography fontSize={24} fontWeight="semibold">
+              Tampilan
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              {...register("primary_color", { required: "Harus diisi" })}
+              error={!!(errors as any)?.primary_color}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              type="color"
+              label="Warna Primer"
+              name="primary_color"
+            />
+          </Grid>
+          <Grid item xs={8}>
+            <TextField
+              {...register("secondary_color", { required: "Harus diisi" })}
+              error={!!(errors as any)?.secondary_color}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              type="color"
+              label="Warna Sekunder"
+              name="secondary_color"
+            />
+          </Grid>
+          <Grid item xs={4} display="flex" alignItems="center">
+            <FormControlLabel
+              control={<Switch {...register("secondary_gradient")} />}
+              label="Gradien"
+            />
+          </Grid>
+          <Grid item xs={8}>
+            <TextField
+              {...register("background_color", { required: "Harus diisi" })}
+              error={!!(errors as any)?.background_color}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              type="color"
+              label="Warna Latar"
+              name="background_color"
+            />
+          </Grid>
+          <Grid item xs={4} display="flex" alignItems="center">
+            <FormControlLabel
+              control={<Switch {...register("background_gradient")} />}
+              label="Gradien"
+            />
+          </Grid>
+
+          {/* Background Image Upload */}
+          <Grid item xs={12}>
+            <Typography fontSize={16} fontWeight="medium" mb={1}>
+              Gambar Latar (JPG/PNG/WebP, maks 5 MB)
+            </Typography>
+            {uploadingImage && <LinearProgress sx={{ mb: 1 }} />}
+            <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
+              <Button
+                variant="outlined"
+                component="label"
+                disabled={uploadingImage}
+                size="small"
+              >
+                {previewImageUrl ? "Ganti Gambar" : "Pilih Gambar"}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageUpload}
+                />
+              </Button>
+              {previewImageUrl && (
+                <Button
+                  variant="text"
+                  color="error"
+                  size="small"
+                  onClick={handleRemoveImage}
+                >
+                  Hapus Gambar
+                </Button>
+              )}
+            </Box>
+            {previewImageUrl && (
+              <Box mt={1}>
+                <img
+                  src={previewImageUrl}
+                  alt="preview"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: 120,
+                    borderRadius: 8,
+                    objectFit: "cover",
+                  }}
+                />
+              </Box>
+            )}
+          </Grid>
+
+          {/* Card Image Upload (overlay on card) */}
+          <Grid item xs={12}>
+            <Typography fontSize={16} fontWeight="medium" mb={1}>
+              Gambar di Kartu (JPG/PNG/WebP, maks 5 MB)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+              Setelah upload, seret gambar langsung di preview atas untuk ubah posisi.
+            </Typography>
+            {uploadingCardImage && <LinearProgress sx={{ mb: 1 }} />}
+            <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
+              <Button
+                variant="outlined"
+                component="label"
+                disabled={uploadingCardImage}
+                size="small"
+              >
+                {previewCardImageUrl ? "Ganti Gambar" : "Pilih Gambar"}
+                <input
+                  ref={cardFileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCardImageUpload}
+                />
+              </Button>
+              {previewCardImageUrl && (
+                <Button
+                  variant="text"
+                  color="error"
+                  size="small"
+                  onClick={handleRemoveCardImage}
+                >
+                  Hapus Gambar
+                </Button>
+              )}
+            </Box>
+            {previewCardImageUrl && (
+              <Stack mt={2} gap={1}>
+                <Typography variant="caption" fontWeight={600}>
+                  Ukuran gambar ({Math.round(cardImageWidth ?? 35)}%)
+                </Typography>
+                <Slider
+                  value={cardImageWidth ?? 35}
+                  min={10}
+                  max={100}
+                  step={1}
+                  onChange={(_, v) =>
+                    setValue("card_image_width", v as number, { shouldDirty: true })
+                  }
+                  valueLabelDisplay="auto"
+                />
+              </Stack>
+            )}
+            <input type="hidden" {...register("card_image")} />
+            <input type="hidden" {...register("card_image_x", { valueAsNumber: true })} />
+            <input type="hidden" {...register("card_image_y", { valueAsNumber: true })} />
+            <input type="hidden" {...register("card_image_width", { valueAsNumber: true })} />
+          </Grid>
+
+          <Grid item xs={8}>
+            <FormControl fullWidth>
+              <InputLabel id="font_family">Font</InputLabel>
+              <Select
+                labelId="font_family"
+                label="Font"
+                error={!!(errors as any)?.font_family}
+                {...register("font_family", { required: "Harus diisi" })}
+                defaultValue={record?.font_family ?? fonts[0]}
+              >
+                {fonts.map((font) => (
+                  <MenuItem value={font} key={font}>
+                    {font}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={4} display="flex" alignItems="center">
+            <FormControlLabel
+              control={<Switch {...register("italicize")} />}
+              label="Miring"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="style">Gaya Kartu</InputLabel>
+              <Select
+                labelId="style"
+                label="Gaya Kartu"
+                {...register("style", { required: "Harus diisi" })}
+                defaultValue={record?.style ?? "DEFAULT"}
+              >
+                <MenuItem value="DEFAULT">DEFAULT</MenuItem>
+                <MenuItem value="FANCY">FANCY</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 4 }} />
+      <Stack gap={2}>
+        <Typography fontSize={24} fontWeight="semibold">
+          Pertanyaan Survey
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Tambahkan pertanyaan dan opsi jawaban untuk tamu. Perubahan tersimpan
+          otomatis saat Anda klik di luar input.
+        </Typography>
+        {record?.id && <QuestionManager requestId={String(record.id)} />}
+      </Stack>
+    </Edit>
+  );
+};

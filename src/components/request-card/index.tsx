@@ -21,6 +21,7 @@ import { FieldValues } from "react-hook-form";
 import { IResponse } from "../../pages/requests/list";
 import { IAnswer, IChoice, IQuestion } from "../../utility/types";
 import { v4 as uuidv4 } from "uuid";
+import CardImageOverlay, { CardImagePosition } from "./card-image-overlay";
 
 interface Survey {
   question: IQuestion;
@@ -55,6 +56,12 @@ interface RequestCardProps {
   rsvpTitle?: string | null;
   questionLabel?: string | null;
   prefillName?: string;
+  cardImage?: string | null;
+  cardImageX?: number | null;
+  cardImageY?: number | null;
+  cardImageWidth?: number | null;
+  editableImage?: boolean;
+  onCardImageChange?: (pos: CardImagePosition) => void;
 }
 
 export const RequestCard: React.FC<RequestCardProps> = ({
@@ -78,6 +85,12 @@ export const RequestCard: React.FC<RequestCardProps> = ({
   rsvpTitle,
   questionLabel,
   prefillName = "",
+  cardImage,
+  cardImageX,
+  cardImageY,
+  cardImageWidth,
+  editableImage = false,
+  onCardImageChange,
 }) => {
   const {
     refineCore: { onFinish },
@@ -174,10 +187,15 @@ export const RequestCard: React.FC<RequestCardProps> = ({
     [responses]
   );
 
-  const closed = useMemo(
-    () => dayjs().isAfter(dayjs(closeDate)) || confirmedAttendees >= limit,
-    [closeDate, confirmedAttendees, limit]
+  const eventClosed = useMemo(
+    () => dayjs().isAfter(dayjs(closeDate)),
+    [closeDate]
   );
+  const capacityFull = useMemo(
+    () => confirmedAttendees >= limit,
+    [confirmedAttendees, limit]
+  );
+  const submitDisabled = eventClosed || !requestId || (accept && capacityFull);
 
   const secondaryGradientColor = useMemo(
     () =>
@@ -201,6 +219,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           overflow: "hidden",
           fontFamily,
           fontStyle: italicize ? "italic" : "normal",
+          position: "relative",
           background:
             style === "DEFAULT"
               ? secondary_gradient
@@ -209,15 +228,23 @@ export const RequestCard: React.FC<RequestCardProps> = ({
               : "",
         }}
         color={defaultTextColor}
-        width={800}
-        maxWidth="md"
+        width="100%"
+        maxWidth={800}
         component={Paper}
         elevation={4}
       >
+        <CardImageOverlay
+          src={cardImage}
+          x={cardImageX ?? 50}
+          y={cardImageY ?? 15}
+          width={cardImageWidth ?? 35}
+          editable={editableImage}
+          onChange={onCardImageChange}
+        />
         <Box
-          px={4}
-          pt={4}
-          pb={style === "DEFAULT" ? 0 : 8}
+          px={{ xs: 2, sm: 4 }}
+          pt={{ xs: 2, sm: 4 }}
+          pb={style === "DEFAULT" ? 0 : { xs: 4, sm: 8 }}
           sx={{
             background:
               style === "DEFAULT"
@@ -225,6 +252,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
                 : secondary_gradient
                 ? secondaryGradientColor
                 : secondaryColor,
+            wordBreak: "break-word",
           }}
         >
           <Box display="flex" justifyContent="flex-end">
@@ -233,7 +261,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
             </Typography>
           </Box>
           <Typography
-            fontSize={36}
+            sx={{ fontSize: { xs: 24, sm: 36 } }}
             textAlign="center"
             fontWeight="bold"
             color={primaryColor}
@@ -253,17 +281,21 @@ export const RequestCard: React.FC<RequestCardProps> = ({
               {customMessage}
             </Typography>
           )}
-          <Box mt={4}>
+          <Box mt={{ xs: 2, sm: 4 }}>
             <Typography
-              fontSize={32}
+              sx={{ fontSize: { xs: 22, sm: 32 } }}
               fontWeight="bold"
               textAlign="center"
               color={primaryColor}
             >
               {displayRsvpTitle}
-              {closed ? " (DITUTUP)" : ""}
+              {eventClosed ? " (DITUTUP)" : capacityFull ? " (PENUH)" : ""}
             </Typography>
-            <Typography fontSize={24} textAlign="center" color={primaryColor}>
+            <Typography
+              sx={{ fontSize: { xs: 16, sm: 24 } }}
+              textAlign="center"
+              color={primaryColor}
+            >
               {displayReplyPrefix} {dayjs(closeDate).format("Do MMMM YYYY")}
             </Typography>
           </Box>
@@ -272,8 +304,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({
         <Box
           component="form"
           onSubmit={handleSubmit(onSubmit, (err) => console.error(err))}
-          px={4}
-          pb={4}
+          px={{ xs: 2, sm: 4 }}
+          pb={{ xs: 2, sm: 4 }}
         >
           <Box display="flex" flexDirection="column" alignItems="center">
             <Box my={2}>
@@ -297,17 +329,20 @@ export const RequestCard: React.FC<RequestCardProps> = ({
                 {displayQuestionLabel}
               </FormLabel>
               <RadioGroup name="radio-buttons-group">
-                <Box display="flex" justifyContent="space-between" gap={4}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  gap={{ xs: 2, sm: 4 }}
+                  flexWrap="wrap"
+                >
                   <FormControlLabel
-                    value={false}
-                    {...register("accept", { required: "Harus dipilih" })}
-                    control={<Radio />}
+                    value="false"
+                    control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
                     label={rejectionLabel}
                   />
                   <FormControlLabel
-                    value={true}
-                    {...register("accept", { required: "Harus dipilih" })}
-                    control={<Radio />}
+                    value="true"
+                    control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
                     label={acceptanceLabel}
                   />
                 </Box>
@@ -352,10 +387,13 @@ export const RequestCard: React.FC<RequestCardProps> = ({
                               <FormControlLabel
                                 key={choice.id}
                                 value={choice.id}
-                                {...surveyRegister(`answers.${index}.choice_id`, {
-                                  required: "Harus dipilih",
-                                })}
-                                control={<Radio />}
+                                control={
+                                  <Radio
+                                    {...surveyRegister(`answers.${index}.choice_id`, {
+                                      required: "Harus dipilih",
+                                    })}
+                                  />
+                                }
                                 label={choice.choice_text}
                               />
                             ))}
@@ -370,7 +408,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           )}
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" type="submit" disabled={closed || !requestId}>
+            <Button variant="contained" type="submit" disabled={submitDisabled}>
               Kirim Konfirmasi
             </Button>
           </Box>

@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useForgotPassword } from "@refinedev/core";
+import { useForgotPassword, useTranslate } from "@refinedev/core";
 import { Link } from "react-router-dom";
 import { AppIcon } from "../../components/app-icon";
 import AuthShell from "./auth-shell";
@@ -26,8 +26,8 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cooldownLeft, setCooldownLeft] = useState(0);
+  const t = useTranslate();
 
-  // Baca sisa cooldown dari localStorage saat mount
   useEffect(() => {
     const raw = localStorage.getItem(COOLDOWN_KEY);
     if (raw) {
@@ -37,10 +37,9 @@ export default function ForgotPasswordPage() {
     }
   }, []);
 
-  // Timer countdown
   useEffect(() => {
     if (cooldownLeft <= 0) return;
-    const t = setInterval(() => {
+    const tick = setInterval(() => {
       setCooldownLeft((prev) => {
         const next = prev - 1;
         if (next <= 0) {
@@ -50,7 +49,7 @@ export default function ForgotPasswordPage() {
         return next;
       });
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(tick);
   }, [cooldownLeft]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,15 +59,15 @@ export default function ForgotPasswordPage() {
     setSubmitted(null);
 
     if (!trimmed) {
-      setErrorMsg("Email harus diisi");
+      setErrorMsg(t("pages.forgotPassword.errors.requiredEmail"));
       return;
     }
     if (!EMAIL_RE.test(trimmed)) {
-      setErrorMsg("Format email tidak valid");
+      setErrorMsg(t("pages.forgotPassword.errors.validEmail"));
       return;
     }
     if (cooldownLeft > 0) {
-      setErrorMsg(`Tunggu ${cooldownLeft} detik sebelum mencoba lagi`);
+      setErrorMsg(t("pages.forgotPassword.errors.cooldown", { seconds: cooldownLeft }));
       return;
     }
 
@@ -86,7 +85,7 @@ export default function ForgotPasswordPage() {
             err?.message ??
             err?.error?.message ??
             err?.name ??
-            "Gagal mengirim link reset. Coba lagi.";
+            t("pages.forgotPassword.errors.genericFailure");
           setErrorMsg(msg);
         },
       }
@@ -100,19 +99,18 @@ export default function ForgotPasswordPage() {
           <Stack alignItems="center" mb={3}>
             <AppIcon />
             <Typography variant="h5" fontWeight="bold" mt={1}>
-              Lupa password
+              {t("pages.forgotPassword.heading")}
             </Typography>
             <Typography variant="caption" color="text.secondary" textAlign="center" mt={1}>
-              Masukkan email terdaftar, kami akan mengirim link reset password.
+              {t("pages.forgotPassword.subtitle")}
             </Typography>
           </Stack>
 
           {submitted && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              <strong>Link reset dikirim!</strong>
+              <strong>{t("pages.forgotPassword.successTitle")}</strong>
               <br />
-              Jika <strong>{submitted}</strong> terdaftar, cek inbox email Anda
-              (termasuk folder Spam/Promosi). Link berlaku 60 menit.
+              {t("pages.forgotPassword.successBody", { email: submitted })}
             </Alert>
           )}
           {errorMsg && (
@@ -124,7 +122,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleSubmit}>
             <Stack gap={2}>
               <TextField
-                label="Email"
+                label={t("pages.forgotPassword.fields.email")}
                 type="email"
                 value={email}
                 onChange={(e) => {
@@ -144,17 +142,17 @@ export default function ForgotPasswordPage() {
                 disabled={isLoading || cooldownLeft > 0}
               >
                 {isLoading
-                  ? "Mengirim..."
+                  ? t("pages.forgotPassword.buttons.sending")
                   : cooldownLeft > 0
-                  ? `Tunggu ${cooldownLeft} detik`
+                  ? t("pages.forgotPassword.buttons.waitCooldown", { seconds: cooldownLeft })
                   : submitted
-                  ? "Kirim Ulang"
-                  : "Kirim Link Reset"}
+                  ? t("pages.forgotPassword.buttons.resend")
+                  : t("pages.forgotPassword.buttons.sendReset")}
               </Button>
               <Typography variant="caption" textAlign="center" color="text.secondary">
-                Ingat password?{" "}
+                {t("pages.forgotPassword.buttons.rememberPassword")}{" "}
                 <MuiLink component={Link} to="/login">
-                  Kembali ke login
+                  {t("pages.forgotPassword.buttons.backToLogin")}
                 </MuiLink>
               </Typography>
             </Stack>

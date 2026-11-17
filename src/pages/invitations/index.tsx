@@ -26,6 +26,7 @@ import {
 } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import EmailIcon from "@mui/icons-material/Email";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -34,6 +35,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import PersonAddAlt1OutlinedIcon from "@mui/icons-material/PersonAddAlt1Outlined";
+import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -44,6 +47,7 @@ import {
   useNotification,
   useOne,
 } from "@refinedev/core";
+import { List } from "@refinedev/mui";
 import { Link, useParams } from "react-router-dom";
 import { IInvitation } from "../../utility/types";
 import { IRequest } from "../requests/list";
@@ -232,6 +236,77 @@ export default function InvitationListPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const [formData, setFormData] = useState({ name: "", jabatan: "", email: "", wa_number: "" });
   const [addLoading, setAddLoading] = useState(false);
+
+  // --- Edit dialog ---
+  const [editTarget, setEditTarget] = useState<IInvitation | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", jabatan: "", email: "", wa_number: "" });
+  const [editLoading, setEditLoading] = useState(false);
+
+  const openEditDialog = (row: IInvitation) => {
+    setEditTarget(row);
+    setEditForm({
+      name: row.name ?? "",
+      jabatan: row.jabatan ?? "",
+      email: row.email ?? "",
+      wa_number: row.wa_number ?? "",
+    });
+  };
+
+  const closeEditDialog = () => {
+    setEditTarget(null);
+    setEditForm({ name: "", jabatan: "", email: "", wa_number: "" });
+  };
+
+  const handleUpdate = async () => {
+    if (!editTarget) return;
+    const name = editForm.name.trim();
+    const email = editForm.email.trim();
+    const wa = normalizeWa(editForm.wa_number);
+
+    if (!name) {
+      open?.({ type: "error", key: "name-req", message: "Nama harus diisi", description: "" });
+      return;
+    }
+    if (email && !EMAIL_RE.test(email)) {
+      open?.({ type: "error", key: "email-bad", message: "Format email tidak valid", description: "" });
+      return;
+    }
+    const waCheck = validateWa(editForm.wa_number);
+    if (!waCheck.valid) {
+      open?.({ type: "error", key: "wa-bad", message: "Nomor WA tidak valid", description: waCheck.error ?? "" });
+      return;
+    }
+
+    setEditLoading(true);
+    const { data: updated, error } = await (supabaseClient as any)
+      .from("invitations")
+      .update({
+        name,
+        jabatan: editForm.jabatan.trim() || null,
+        email: email || null,
+        wa_number: wa || null,
+      })
+      .eq("id", editTarget.id)
+      .select("id");
+    setEditLoading(false);
+
+    if (error) {
+      open?.({ type: "error", key: "edit-err", message: "Gagal menyimpan", description: error.message });
+      return;
+    }
+    if (!updated || updated.length === 0) {
+      open?.({
+        type: "error",
+        key: "edit-blocked",
+        message: "Perubahan tidak tersimpan",
+        description: "Kemungkinan RLS policy memblokir. Cek policy UPDATE tabel 'invitations'.",
+      });
+      return;
+    }
+    closeEditDialog();
+    refetch();
+    open?.({ type: "success", key: "edit-ok", message: "Tamu diperbarui", description: "" });
+  };
 
   const handleAdd = async () => {
     const name = formData.name.trim();
@@ -720,7 +795,7 @@ export default function InvitationListPage() {
         field: "actions",
         headerName: "AKSI",
         sortable: false,
-        minWidth: 260,
+        minWidth: 310,
         headerAlign: "center",
         align: "center",
         renderCell: ({ row }) => {
@@ -760,6 +835,16 @@ export default function InvitationListPage() {
                 WA
               </Button>
             </Tooltip>
+            <Tooltip title="Edit tamu">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => openEditDialog(row)}
+                sx={{ border: "1px solid", borderColor: "primary.main" }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Hapus tamu">
               <IconButton
                 size="small"
@@ -781,16 +866,31 @@ export default function InvitationListPage() {
   const unsent = invitations.filter((i) => i.email && !i.sent_email_at).length;
 
   return (
-    <Box p={3}>
-      <Stack direction="row" alignItems="center" gap={1} mb={1} flexWrap="wrap">
-        <IconButton component={Link} to={`/requests/show/${requestId}`} size="small">
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h5" fontWeight="bold">
-          Daftar Undangan — {request?.title ?? ""}
-        </Typography>
-      </Stack>
+    <List
+      breadcrumb={false}
+      headerButtons={() => null}
+      title={
+        <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" sx={{ minWidth: 0 }}>
+          <IconButton component={Link} to={`/requests/show/${requestId}`} size="small">
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{
+              fontSize: { xs: "1.1rem", sm: "1.5rem" },
+              wordBreak: "break-word",
+            }}
+          >
+            Daftar Undangan — {request?.title ?? ""}
+          </Typography>
+        </Stack>
+      }
+      wrapperProps={{ sx: { minWidth: 0, maxWidth: "100%", overflow: "hidden" } }}
+      contentProps={{ sx: { minWidth: 0, overflowX: "hidden" } }}
+    >
 
+      {stats && stats.total > 0 && (
       <Box
         mb={2}
         p={2}
@@ -801,9 +901,9 @@ export default function InvitationListPage() {
           borderColor: "divider",
         }}
       >
-        <Stack direction="row" alignItems="baseline" gap={1} mb={stats ? 1.5 : 0} flexWrap="wrap">
+        <Stack direction="row" alignItems="baseline" gap={1} mb={1.5} flexWrap="wrap">
           <Typography variant="h4" fontWeight="bold" color="primary">
-            {stats?.total ?? invitations.length}
+            {stats.total}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             total tamu undangan
@@ -819,7 +919,7 @@ export default function InvitationListPage() {
           )}
         </Stack>
 
-        {stats && stats.total > 0 && (
+        {(
           <Stack gap={1.5}>
             {/* Email breakdown */}
             <Box>
@@ -927,11 +1027,15 @@ export default function InvitationListPage() {
           </Stack>
         )}
       </Box>
+      )}
 
+      {invitations.length > 0 && (
       <Alert severity="info" sx={{ mb: 2 }}>
         Format CSV: <strong>name, jabatan, email, wa_number</strong> (baris pertama boleh header). Maks 5.000 tamu.
       </Alert>
+      )}
 
+      {invitations.length > 0 && (
       <Stack direction="row" gap={1} mb={2} flexWrap="wrap">
         <Button
           variant="contained"
@@ -986,7 +1090,9 @@ export default function InvitationListPage() {
           </Button>
         )}
       </Stack>
+      )}
 
+      {invitations.length > 0 && (
       <Stack direction="row" gap={1} mb={2} alignItems="center" flexWrap="wrap">
         <TextField
           size="small"
@@ -994,7 +1100,12 @@ export default function InvitationListPage() {
           placeholder="Nama, email, atau jabatan..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ minWidth: 280, flex: 1, maxWidth: 420 }}
+          sx={{
+            flex: 1,
+            width: { xs: "100%", sm: "auto" },
+            minWidth: { xs: 0, sm: 280 },
+            maxWidth: { xs: "100%", sm: 420 },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -1010,7 +1121,13 @@ export default function InvitationListPage() {
             ) : null,
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 220 }}>
+        <FormControl
+          size="small"
+          sx={{
+            width: { xs: "100%", sm: "auto" },
+            minWidth: { xs: 0, sm: 220 },
+          }}
+        >
           <InputLabel id="status-filter-label">
             <Stack direction="row" gap={0.5} alignItems="center">
               <FilterListIcon fontSize="small" />
@@ -1062,8 +1179,9 @@ export default function InvitationListPage() {
           Muat Ulang
         </Button>
       </Stack>
+      )}
 
-      {importing && <LinearProgress sx={{ mb: 1 }} />}
+      {importing && invitations.length > 0 && <LinearProgress sx={{ mb: 1 }} />}
       {sendingEmail && sendProgress.total > 0 && (
         <Box mb={1}>
           <Stack direction="row" justifyContent="space-between" mb={0.5}>
@@ -1086,7 +1204,56 @@ export default function InvitationListPage() {
         <Box display="flex" justifyContent="center" mt={4}>
           <CircularProgress />
         </Box>
+      ) : invitations.length === 0 ? (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: { xs: 5, sm: 8 },
+            px: 2,
+            border: "2px dashed",
+            borderColor: "divider",
+            borderRadius: 2,
+            bgcolor: "action.hover",
+          }}
+        >
+          <GroupAddOutlinedIcon
+            sx={{ fontSize: { xs: 56, sm: 72 }, color: "text.secondary", mb: 1 }}
+          />
+          <Typography variant="h6" fontWeight="bold" mb={0.5}>
+            Belum ada tamu undangan
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3} sx={{ maxWidth: 420, mx: "auto" }}>
+            Tambahkan tamu satu per satu, atau unggah file CSV untuk mengisi daftar undangan sekaligus.
+          </Typography>
+          <Stack direction="row" gap={1} justifyContent="center" flexWrap="wrap">
+            <Button
+              variant="contained"
+              startIcon={<PersonAddAlt1OutlinedIcon />}
+              onClick={() => setOpenAdd(true)}
+            >
+              Tambah Tamu Pertama
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              component="label"
+              disabled={importing}
+            >
+              Import CSV
+              <input ref={csvRef} type="file" hidden accept=".csv,text/csv" onChange={handleCSV} />
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={downloadTemplate}
+            >
+              Unduh Template
+            </Button>
+          </Stack>
+          {importing && <LinearProgress sx={{ mt: 2, maxWidth: 420, mx: "auto" }} />}
+        </Box>
       ) : (
+        <Box sx={{ width: 0, minWidth: "100%", overflowX: "auto" }}>
         <DataGrid
           rows={filteredInvitations}
           columns={columns}
@@ -1126,12 +1293,17 @@ export default function InvitationListPage() {
             setSelection(incoming);
           }}
         />
+        </Box>
       )}
 
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="caption" color="text.secondary">
-        Link RSVP personal: {APP_URL}/r/{requestId}?name=NamaTamu — nama tamu akan terisi otomatis.
-      </Typography>
+      {invitations.length > 0 && (
+        <>
+          <Divider sx={{ my: 3 }} />
+          <Typography variant="caption" color="text.secondary">
+            Link RSVP personal: {APP_URL}/r/{requestId}?name=NamaTamu — nama tamu akan terisi otomatis.
+          </Typography>
+        </>
+      )}
 
       {/* Add Dialog */}
       <Dialog
@@ -1228,6 +1400,87 @@ export default function InvitationListPage() {
         </DialogActions>
       </Dialog>
 
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editTarget}
+        onClose={() => closeEditDialog()}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Edit Tamu</DialogTitle>
+        <DialogContent>
+          <Stack gap={2} mt={1}>
+            <TextField
+              label="Nama *"
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              label="Jabatan"
+              value={editForm.jabatan}
+              onChange={(e) => setEditForm({ ...editForm, jabatan: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={editForm.email}
+              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              fullWidth
+            />
+            {(() => {
+              const digits = normalizeWa(editForm.wa_number);
+              const waCheck = validateWa(editForm.wa_number);
+              const hasInput = digits.length > 0;
+              const isError = hasInput && !waCheck.valid;
+              const counterColor = isError
+                ? "error.main"
+                : digits.length >= WA_MIN
+                ? "success.main"
+                : "text.secondary";
+              return (
+                <TextField
+                  label="No. WhatsApp"
+                  placeholder="Contoh: 628123456789 atau 08123456789"
+                  value={editForm.wa_number}
+                  onChange={(e) => {
+                    const cleaned = normalizeWa(e.target.value).slice(0, WA_MAX);
+                    setEditForm({ ...editForm, wa_number: cleaned });
+                  }}
+                  fullWidth
+                  inputMode="numeric"
+                  error={isError}
+                  helperText={
+                    <Box component="span" display="flex" justifyContent="space-between" width="100%">
+                      <Box component="span" color={isError ? "error.main" : "text.secondary"}>
+                        {isError
+                          ? waCheck.error
+                          : hasInput && waCheck.valid
+                          ? "Format valid"
+                          : "Opsional — format nomor Indonesia"}
+                      </Box>
+                      <Box component="span" color={counterColor} fontWeight="bold">
+                        {digits.length}/{WA_MAX}
+                      </Box>
+                    </Box>
+                  }
+                />
+              );
+            })()}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => closeEditDialog()} disabled={editLoading}>
+            Batal
+          </Button>
+          <Button variant="contained" onClick={handleUpdate} disabled={editLoading}>
+            {editLoading ? "Menyimpan..." : "Simpan Perubahan"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Hapus Tamu?</DialogTitle>
@@ -1261,6 +1514,6 @@ export default function InvitationListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </List>
   );
 }

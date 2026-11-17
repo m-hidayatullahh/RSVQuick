@@ -50,45 +50,89 @@ export default function ProfilePage() {
   }, []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const input = e.target;
+    const file = input.files?.[0];
+    // Reset input value supaya bisa pilih file yang sama lagi di upload berikutnya
+    const resetInput = () => {
+      input.value = "";
+    };
+
+    if (!file) {
+      resetInput();
+      return;
+    }
+    console.log("[avatar-upload] file:", { name: file.name, type: file.type, size: file.size });
+
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      open?.({ type: "error", key: "av-type", message: "Format tidak didukung", description: "Gunakan JPG, PNG, atau WebP." });
+      open?.({ type: "error", key: "av-type", message: "Format tidak didukung", description: `Tipe file: ${file.type || "tidak dikenali"}. Gunakan JPG, PNG, atau WebP.` });
+      resetInput();
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      open?.({ type: "error", key: "av-size", message: "File terlalu besar", description: "Maks 5 MB." });
+      open?.({ type: "error", key: "av-size", message: "File terlalu besar", description: `Ukuran: ${(file.size / 1024 / 1024).toFixed(2)} MB. Maks 5 MB.` });
+      resetInput();
       return;
     }
+
     setUploadingAvatar(true);
+    open?.({ type: "success", key: "av-start", message: "Mengunggah foto...", description: "Mohon tunggu sebentar." });
+
     try {
       const { data: authData } = await (supabaseClient as any).auth.getUser();
       const userId = authData?.user?.id;
-      const ext = file.name.split(".").pop();
+      if (!userId) throw new Error("Session tidak ditemukan, silakan login ulang");
+      const ext = file.name.split(".").pop() || "jpg";
       const path = `${userId}/${uuidv4()}.${ext}`;
+      console.log("[avatar-upload] uploading to:", path);
 
       const { error: uploadError } = await (supabaseClient as any).storage
         .from("avatars")
-        .upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) {
+        console.error("[avatar-upload] upload error:", uploadError);
+        throw uploadError;
+      }
+      console.log("[avatar-upload] upload success");
 
       const { data: urlData } = (supabaseClient as any).storage
         .from("avatars")
         .getPublicUrl(path);
       const url = urlData?.publicUrl as string;
+      if (!url) throw new Error("Gagal generate URL foto — pastikan bucket 'avatars' public");
+      console.log("[avatar-upload] public url:", url);
 
-      await (supabaseClient as any)
+      const { data: upserted, error: upsertErr } = await (supabaseClient as any)
         .from("profiles")
-        .update({ avatar_url: url, updated_at: new Date().toISOString() })
-        .eq("id", userId);
+        .upsert(
+          { id: userId, avatar_url: url, updated_at: new Date().toISOString() },
+          { onConflict: "id" }
+        )
+        .select("id, avatar_url");
 
-      setAvatarUrl(url);
-      refetch?.();
+      if (upsertErr) {
+        console.error("[avatar-upload] profile upsert error:", upsertErr);
+        throw upsertErr;
+      }
+      if (!upserted || upserted.length === 0) {
+        throw new Error("Foto tidak tersimpan di profil — kemungkinan RLS policy memblokir. Cek policy tabel 'profiles'.");
+      }
+      console.log("[avatar-upload] profile updated:", upserted);
+
+      const urlWithBust = `${url}?v=${Date.now()}`;
+      setAvatarUrl(urlWithBust);
+      await refetch?.();
       open?.({ type: "success", key: "av-ok", message: "Foto profil diperbarui", description: "" });
     } catch (err: any) {
-      open?.({ type: "error", key: "av-err", message: "Gagal mengunggah foto", description: err?.message ?? "" });
+      console.error("[avatar-upload] failed:", err);
+      open?.({
+        type: "error",
+        key: "av-err",
+        message: "Gagal mengunggah foto",
+        description: err?.message ?? err?.error?.message ?? JSON.stringify(err).slice(0, 200),
+      });
     } finally {
       setUploadingAvatar(false);
+      resetInput();
     }
   };
 

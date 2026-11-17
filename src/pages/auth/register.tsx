@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRegister } from "@refinedev/core";
+import { useRegister, useTranslate } from "@refinedev/core";
 import { Link } from "react-router-dom";
 import { AppIcon } from "../../components/app-icon";
 import PasswordField from "../../components/password-field";
@@ -21,6 +21,7 @@ export default function RegisterPage() {
   }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const t = useTranslate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,13 +35,13 @@ export default function RegisterPage() {
           <Stack alignItems="center" mb={3}>
             <AppIcon />
             <Typography variant="h5" fontWeight="bold" mt={1}>
-              Daftar akun baru
+              {t("pages.register.heading")}
             </Typography>
           </Stack>
           <form onSubmit={handleSubmit}>
             <Stack gap={2}>
               <TextField
-                label="Email"
+                label={t("pages.register.fields.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -50,12 +51,12 @@ export default function RegisterPage() {
                 autoComplete="email"
               />
               <PasswordField
-                label="Password"
+                label={t("pages.register.fields.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 fullWidth
                 required
-                helperText="Minimal 6 karakter"
+                helperText={t("pages.register.passwordHelp")}
                 autoComplete="new-password"
               />
               <Button
@@ -64,12 +65,12 @@ export default function RegisterPage() {
                 size="large"
                 disabled={isLoading}
               >
-                {isLoading ? "Memproses..." : "Daftar"}
+                {isLoading ? t("common.processing") : t("pages.register.buttons.submit")}
               </Button>
               <Typography variant="caption" textAlign="center" color="text.secondary">
-                Sudah punya akun?{" "}
+                {t("pages.register.buttons.haveAccount")}{" "}
                 <MuiLink component={Link} to="/login">
-                  Masuk
+                  {t("pages.register.signin")}
                 </MuiLink>
               </Typography>
             </Stack>

@@ -77,6 +77,10 @@ export const ResponseCreate: React.FC = () => {
         rsvpTitle={data.data.rsvp_title}
         questionLabel={data.data.question_label}
         prefillName={prefillName}
+        cardImage={data.data.card_image}
+        cardImageX={data.data.card_image_x}
+        cardImageY={data.data.card_image_y}
+        cardImageWidth={data.data.card_image_width}
         surveys={questions?.map((q) => ({
           question: q,
           choices: choices?.filter((c) => c.question_id === q.id) ?? [],

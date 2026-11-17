@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useLogin } from "@refinedev/core";
+import { useLogin, useTranslate } from "@refinedev/core";
 import { Link } from "react-router-dom";
 import { AppIcon } from "../../components/app-icon";
 import PasswordField from "../../components/password-field";
@@ -22,6 +22,7 @@ export default function LoginPage() {
   }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const t = useTranslate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +36,13 @@ export default function LoginPage() {
           <Stack alignItems="center" mb={3}>
             <AppIcon />
             <Typography variant="h5" fontWeight="bold" mt={1}>
-              Masuk ke RSVQuick
+              {t("pages.login.heading")}
             </Typography>
           </Stack>
           <form onSubmit={handleSubmit}>
             <Stack gap={2}>
               <TextField
-                label="Email"
+                label={t("pages.login.fields.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -51,7 +52,7 @@ export default function LoginPage() {
                 autoComplete="email"
               />
               <PasswordField
-                label="Password"
+                label={t("pages.login.fields.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 fullWidth
@@ -60,7 +61,7 @@ export default function LoginPage() {
               />
               <Box textAlign="right">
                 <MuiLink component={Link} to="/forgot-password" variant="caption">
-                  Lupa password?
+                  {t("pages.login.buttons.forgotPassword")}
                 </MuiLink>
               </Box>
               <Button
@@ -69,12 +70,12 @@ export default function LoginPage() {
                 size="large"
                 disabled={isLoading}
               >
-                {isLoading ? "Memproses..." : "Masuk"}
+                {isLoading ? t("common.processing") : t("pages.login.buttons.submit")}
               </Button>
               <Typography variant="caption" textAlign="center" color="text.secondary">
-                Belum punya akun?{" "}
+                {t("pages.login.buttons.noAccount")}{" "}
                 <MuiLink component={Link} to="/register">
-                  Daftar
+                  {t("pages.login.signup")}
                 </MuiLink>
               </Typography>
             </Stack>

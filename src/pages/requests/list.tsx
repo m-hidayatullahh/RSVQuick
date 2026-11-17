@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { CreateButton, List } from "@refinedev/mui";
 import { IResourceComponentsProps, useList } from "@refinedev/core";
 import { Box, Typography, Stack, CircularProgress } from "@mui/material";
@@ -10,6 +10,10 @@ export interface IRequest {
   id: string;
   background_color: string;
   background_image: string | null;
+  card_image: string | null;
+  card_image_x: number | null;
+  card_image_y: number | null;
+  card_image_width: number | null;
   title: string;
   address: string;
   acceptance_label: string;
@@ -49,13 +53,37 @@ export const RequestList: React.FC<IResourceComponentsProps> = () => {
 
   const requests = data?.data;
 
+  const requestIds = useMemo(() => requests?.map((r) => r.id) ?? [], [requests]);
+  const { data: responsesData } = useList<IResponse>({
+    resource: "responses",
+    queryOptions: { enabled: requestIds.length > 0 },
+    filters: [{ field: "request_id", operator: "in", value: requestIds }],
+    pagination: { pageSize: 5000 },
+  });
+
+  const statsByRequest = useMemo(() => {
+    const map: Record<string, { accepted: number; rejected: number; total: number }> = {};
+    (responsesData?.data ?? []).forEach((r) => {
+      const key = r.request_id;
+      if (!map[key]) map[key] = { accepted: 0, rejected: 0, total: 0 };
+      map[key].total += 1;
+      if (r.accept) map[key].accepted += 1;
+      else map[key].rejected += 1;
+    });
+    return map;
+  }, [responsesData]);
+
   return (
     <List>
       {requests ? (
         requests.length > 0 ? (
           <Box display="flex" flexWrap="wrap" gap={2}>
             {requests.map((req) => (
-              <RequestListCard key={req.id} request={req} />
+              <RequestListCard
+                key={req.id}
+                request={req}
+                stats={statsByRequest[req.id]}
+              />
             ))}
           </Box>
         ) : (

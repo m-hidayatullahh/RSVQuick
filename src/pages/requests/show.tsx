@@ -1,12 +1,11 @@
 import {
   useShow,
   IResourceComponentsProps,
-  useDelete,
   useNotification,
   HttpError,
   useTable,
 } from "@refinedev/core";
-import { DateField, Show, useDataGrid } from "@refinedev/mui";
+import { DateField, Show, useDataGrid, EditButton } from "@refinedev/mui";
 import QRCode from "react-qr-code";
 
 import {
@@ -31,20 +30,17 @@ import { useMemo, useRef } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { IRequest, IResponse } from "./list";
 import html2canvas from "html2canvas";
-import { useModalForm } from "@refinedev/react-hook-form";
-import { IAnswer, IChoice, IQuestion, Nullable } from "../../utility/types";
-import { CreateQuestionDrawer } from "../../components/questions/question-create-drawer";
+import { IAnswer, IChoice, IQuestion } from "../../utility/types";
 import QuestionShow from "../../components/questions/show";
-import { CreateChoiceDrawer } from "../../components/questions/choice-create-drawer";
 import EmptyResourceMessage from "../../components/common/empty-resource-message";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { supabaseClient } from "../../utility";
 
 export const RequestShow: React.FC<IResourceComponentsProps> = () => {
-  const { mutate } = useDelete();
   const { open } = useNotification();
+  const [isDeletingResponse, setIsDeletingResponse] = useState(false);
   const qrCodeRef = useRef<HTMLDivElement>(null);
-  const [selectedQuestion, setSelectedQuestion] = useState<IQuestion | null>(null);
   const [deleteResponseTarget, setDeleteResponseTarget] = useState<IResponse | null>(null);
 
   const appUrl = window.location.origin;
@@ -158,27 +154,6 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
     pagination: { pageSize: 100 },
   });
 
-  const questionCreateDrawerFormProps = useModalForm<
-    IQuestion,
-    HttpError,
-    Nullable<IQuestion>
-  >({
-    refineCoreProps: { action: "create", resource: "questions" },
-    syncWithLocation: true,
-    warnWhenUnsavedChanges: false,
-  });
-  const { modal: { show: showQuestionCreateDrawer } } = questionCreateDrawerFormProps;
-
-  const choiceCreateDrawerFormProps = useModalForm<
-    IChoice,
-    HttpError,
-    Nullable<IChoice>
-  >({
-    refineCoreProps: { action: "create", resource: "choices" },
-    syncWithLocation: true,
-  });
-  const { modal: { show: showChoiceCreateDrawer } } = choiceCreateDrawerFormProps;
-
   const { tableQueryResult: questionQueryResult } = useTable<IQuestion, HttpError>({
     resource: "questions",
     queryOptions: { enabled: !!request },
@@ -226,34 +201,46 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
   return (
     <Show
       isLoading={isLoading}
-      canEdit={false}
-      headerButtons={({ defaultButtons }) => (
-        <>
-          <Button
-            component={Link}
-            to={`/requests/${request?.id}/invitations`}
-            variant="outlined"
-            startIcon={<PeopleAltOutlined />}
-          >
-            Daftar Undangan
-          </Button>
-          <Button onClick={copyLinkToClipboard} variant="contained">
-            Salin Link
-          </Button>
-          <Button
-            onClick={shareWhatsApp}
-            variant="contained"
-            color="success"
-            startIcon={<WhatsAppIcon />}
-          >
-            WhatsApp
-          </Button>
-          {defaultButtons}
-        </>
-      )}
+      headerButtons={() => null}
     >
       {request && (
         <Box>
+          <Stack
+            direction="row"
+            gap={1}
+            flexWrap="wrap"
+            mb={2}
+            sx={{ width: "100%" }}
+          >
+            <Button
+              component={Link}
+              to={`/requests/${request.id}/invitations`}
+              variant="outlined"
+              startIcon={<PeopleAltOutlined />}
+              size="small"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              Daftar Undangan
+            </Button>
+            <Button
+              onClick={copyLinkToClipboard}
+              variant="contained"
+              size="small"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              Salin Link
+            </Button>
+            <Button
+              onClick={shareWhatsApp}
+              variant="contained"
+              color="success"
+              startIcon={<WhatsAppIcon />}
+              size="small"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              WhatsApp
+            </Button>
+          </Stack>
           <Background
             backgroundColor={request.background_color}
             backgroundImage={request.background_image}
@@ -278,6 +265,10 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
               replyPrefix={request.reply_prefix}
               rsvpTitle={request.rsvp_title}
               questionLabel={request.question_label}
+              cardImage={request.card_image}
+              cardImageX={request.card_image_x}
+              cardImageY={request.card_image_y}
+              cardImageWidth={request.card_image_width}
             />
           </Background>
 
@@ -331,9 +322,9 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
           <Stack gap={2}>
             <Stack justifyContent="space-between" alignItems="center" direction="row">
               <Typography fontSize={24}>Pertanyaan Survey</Typography>
-              <Button onClick={() => showQuestionCreateDrawer()} variant="outlined">
-                Tambah Pertanyaan
-              </Button>
+              <EditButton recordItemId={request.id} variant="outlined">
+                Kelola Pertanyaan
+              </EditButton>
             </Stack>
             {questions && questions.length ? (
               <Stack gap={2}>
@@ -341,8 +332,7 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
                   <QuestionShow
                     key={q.id}
                     question={q}
-                    showChoiceCreateDrawer={showChoiceCreateDrawer}
-                    setSelectedQuestion={setSelectedQuestion}
+                    readOnly
                     answers={confirmedAttendeeAnswers?.filter((a) => a.question_id === q.id)}
                     responses={confirmedAttendeeResponses}
                     choices={choices?.filter((c) => c.question_id === q.id)}
@@ -350,19 +340,9 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
                 ))}
               </Stack>
             ) : (
-              <EmptyResourceMessage message="Belum ada pertanyaan. Buat pertanyaan baru." />
+              <EmptyResourceMessage message="Belum ada pertanyaan. Tambahkan di halaman Edit." />
             )}
           </Stack>
-
-          <CreateQuestionDrawer
-            showChoiceCreateDrawer={showChoiceCreateDrawer}
-            drawerProps={questionCreateDrawerFormProps}
-            request_id={request.id}
-          />
-          <CreateChoiceDrawer
-            drawerProps={choiceCreateDrawerFormProps}
-            question={selectedQuestion}
-          />
 
           <Divider sx={{ my: 4 }} />
 
@@ -398,24 +378,67 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDeleteResponseTarget(null)}>Batal</Button>
+              <Button
+                onClick={() => setDeleteResponseTarget(null)}
+                disabled={isDeletingResponse}
+              >
+                Batal
+              </Button>
               <Button
                 variant="contained"
                 color="error"
-                onClick={() => {
+                disabled={isDeletingResponse}
+                onClick={async () => {
                   if (!deleteResponseTarget) return;
-                  mutate(
-                    { resource: "responses", id: deleteResponseTarget.id },
-                    {
-                      onSettled: () => {
-                        setDeleteResponseTarget(null);
-                        responseTableQueryResult.refetch();
-                      },
+                  const target = deleteResponseTarget;
+                  const name = target.responder_name;
+                  setIsDeletingResponse(true);
+                  try {
+                    // Delete answers linked to this response first (if any) — avoids FK
+                    // violation if a trigger / policy didn't cascade.
+                    await (supabaseClient as any)
+                      .from("answers")
+                      .delete()
+                      .eq("response_id", target.id);
+
+                    const { data: deleted, error } = await (supabaseClient as any)
+                      .from("responses")
+                      .delete()
+                      .eq("id", target.id)
+                      .select("id");
+
+                    if (error) throw error;
+                    if (!deleted || deleted.length === 0) {
+                      throw new Error(
+                        "Data tidak ikut terhapus — kemungkinan RLS policy memblokir. Cek policy DELETE tabel 'responses'."
+                      );
                     }
-                  );
+
+                    setDeleteResponseTarget(null);
+                    await responseTableQueryResult.refetch();
+                    open?.({
+                      type: "success",
+                      key: "del-response-ok",
+                      message: "Respon dihapus",
+                      description: `Respon dari ${name} berhasil dihapus.`,
+                    });
+                  } catch (err: any) {
+                    console.error("[delete-response] failed:", err);
+                    open?.({
+                      type: "error",
+                      key: "del-response-err",
+                      message: "Gagal menghapus respon",
+                      description:
+                        err?.message ??
+                        err?.error?.message ??
+                        "Coba lagi atau hubungi admin.",
+                    });
+                  } finally {
+                    setIsDeletingResponse(false);
+                  }
                 }}
               >
-                Hapus
+                {isDeletingResponse ? "Menghapus..." : "Hapus"}
               </Button>
             </DialogActions>
           </Dialog>

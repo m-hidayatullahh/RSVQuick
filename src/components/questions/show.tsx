@@ -16,13 +16,15 @@ export default function QuestionShow({
   answers,
   responses,
   choices,
+  readOnly = false,
 }: {
   question: IQuestion;
-  showChoiceCreateDrawer: (id?: BaseKey | undefined) => void;
-  setSelectedQuestion: React.Dispatch<React.SetStateAction<IQuestion | null>>;
+  showChoiceCreateDrawer?: (id?: BaseKey | undefined) => void;
+  setSelectedQuestion?: React.Dispatch<React.SetStateAction<IQuestion | null>>;
   choices?: IChoice[];
   answers?: IAnswer[];
   responses?: IResponse[];
+  readOnly?: boolean;
 }) {
   return (
     <Box bgcolor="action.hover" p={2} borderRadius={2}>
@@ -37,22 +39,24 @@ export default function QuestionShow({
             {question.question_text}
           </Typography>
         </Box>
-        <Stack direction="row" gap={2} alignItems="center">
-          <Button
-            size="small"
-            onClick={() => {
-              setSelectedQuestion(question);
-              showChoiceCreateDrawer();
-            }}
-          >
-            Create Choices
-          </Button>
-          <DeleteButton
-            hideText
-            resource="questions"
-            recordItemId={question.id}
-          />
-        </Stack>
+        {!readOnly && (
+          <Stack direction="row" gap={2} alignItems="center">
+            <Button
+              size="small"
+              onClick={() => {
+                setSelectedQuestion?.(question);
+                showChoiceCreateDrawer?.();
+              }}
+            >
+              Tambah Pilihan
+            </Button>
+            <DeleteButton
+              hideText
+              resource="questions"
+              recordItemId={question.id}
+            />
+          </Stack>
+        )}
       </Stack>
       <Stack direction="row" gap={2} alignItems="center">
         <Box

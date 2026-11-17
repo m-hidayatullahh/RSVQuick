@@ -46,6 +46,7 @@ export default {
   "pages.register.errors.requiredPassword": "Password is required",
   "pages.register.buttons.submit": "Sign up",
   "pages.register.buttons.haveAccount": "Already have an account?",
+  "pages.register.passwordHelp": "At least 6 characters",
 
   // Forgot password
   "pages.forgotPassword.title": "Forgot password?",
@@ -55,6 +56,17 @@ export default {
   "pages.forgotPassword.buttons.submit": "Send reset instructions",
   "pages.forgotPassword.buttons.haveAccount": "Already have an account?",
   "pages.forgotPassword.signin": "Sign in",
+  "pages.forgotPassword.subtitle": "Enter your registered email and we'll send you a password reset link.",
+  "pages.forgotPassword.successTitle": "Reset link sent!",
+  "pages.forgotPassword.successBody": "If {{email}} is registered, check your inbox (including Spam/Promotions). The link is valid for 60 minutes.",
+  "pages.forgotPassword.errors.genericFailure": "Failed to send reset link. Try again.",
+  "pages.forgotPassword.errors.cooldown": "Wait {{seconds}} seconds before trying again",
+  "pages.forgotPassword.buttons.sending": "Sending...",
+  "pages.forgotPassword.buttons.waitCooldown": "Wait {{seconds}} seconds",
+  "pages.forgotPassword.buttons.resend": "Resend",
+  "pages.forgotPassword.buttons.sendReset": "Send Reset Link",
+  "pages.forgotPassword.buttons.rememberPassword": "Remember your password?",
+  "pages.forgotPassword.buttons.backToLogin": "Back to login",
 
   // Update password
   "pages.updatePassword.title": "Update password",
@@ -64,6 +76,12 @@ export default {
   "pages.updatePassword.errors.requiredPassword": "Password is required",
   "pages.updatePassword.errors.requiredConfirmPassword": "Confirm password is required",
   "pages.updatePassword.buttons.submit": "Update password",
+  "pages.updatePassword.subtitle": "Enter a new password for your account.",
+  "pages.updatePassword.passwordHelp": "At least 6 characters",
+  "pages.updatePassword.fields.confirm": "Confirm password",
+  "pages.updatePassword.errors.mismatch": "Password doesn't match the confirmation.",
+  "pages.updatePassword.buttons.saving": "Saving...",
+  "pages.updatePassword.buttons.save": "Save Password",
 
   // Error pages
   "pages.error.info": "Error",
@@ -115,4 +133,31 @@ export default {
 
   // Misc
   "loading": "Loading...",
+
+  // Common (shared across landing/auth)
+  "common.dashboard": "Dashboard",
+  "common.login": "Login",
+  "common.register": "Create Account",
+  "common.darkMode": "Dark mode",
+  "common.lightMode": "Light mode",
+  "common.switchToEn": "Switch to English",
+  "common.switchToId": "Ganti ke Bahasa Indonesia",
+  "common.processing": "Processing...",
+
+  // Landing page
+  "pages.landing.hero.title": "Create and Manage RSVPs Online Quickly",
+  "pages.landing.hero.subtitle": "Build customizable RSVPs fast and send them online. No more counting cards by hand. Keep track of attending guests effortlessly.",
+  "pages.landing.cta.start": "Let's Create One Now",
+  "pages.landing.features.customize.title": "Customizable RSVP Cards",
+  "pages.landing.features.customize.desc": "Simple customization options to make RSVP cards quickly while keeping them unique.",
+  "pages.landing.features.profile.title": "Know Your Guests",
+  "pages.landing.features.profile.desc": "Add questions to profile your guests. Example: how many guests are vegan?",
+  "pages.landing.features.qr.title": "Invite via QR Code",
+  "pages.landing.features.qr.desc": "Share invites via a handy QR code. Copy it as an image and send.",
+
+  // Auth pages — extra headings
+  "pages.login.heading": "Sign in to RSVQuick",
+  "pages.register.heading": "Create your RSVQuick account",
+  "pages.forgotPassword.heading": "Reset your RSVQuick password",
+  "pages.updatePassword.heading": "Update your RSVQuick password",
 } as const;

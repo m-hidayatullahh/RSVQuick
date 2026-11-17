@@ -40,6 +40,9 @@ export default function Background({
       sx={bgStyle}
       padding={{ xs: 1, md: 8 }}
       minHeight={responseView ? "100vh" : "100%"}
+      width="100%"
+      maxWidth="100%"
+      overflow="hidden"
     >
       {children}
     </Box>
