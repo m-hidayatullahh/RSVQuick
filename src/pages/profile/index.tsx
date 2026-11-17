@@ -189,9 +189,9 @@ export default function ProfilePage() {
 
       {uploadingAvatar && <LinearProgress sx={{ mb: 2 }} />}
 
-      <Alert severity="info" sx={{ mb: 2, fontSize: 12 }}>
+      {/* <Alert severity="info" sx={{ mb: 2, fontSize: 12 }}>
         Pastikan bucket "avatars" sudah dibuat di Supabase Storage (public).
-      </Alert>
+      </Alert> */}
 
       {/* Profile Info */}
       <Stack gap={2} mb={3}>
