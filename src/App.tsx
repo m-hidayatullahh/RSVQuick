@@ -1,11 +1,11 @@
-import { Authenticated, Refine } from "@refinedev/core";
+import { Authenticated, Refine, AccessControlProvider } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import RsvpIcon from "@mui/icons-material/Rsvp";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import {
-  AuthPage,
   ErrorComponent,
   notificationProvider,
   RefineSnackbarProvider,
@@ -22,22 +22,21 @@ import routerBindings, {
 } from "@refinedev/react-router-v6";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
 import authProvider from "./authProvider";
 import { Header } from "./components/header";
 import { ColorModeContextProvider } from "./contexts/color-mode";
-import {
-  BlogPostCreate,
-  BlogPostEdit,
-  BlogPostList,
-  BlogPostShow,
-} from "./pages/blog-posts";
-import {
-  CategoryCreate,
-  CategoryEdit,
-  CategoryList,
-  CategoryShow,
-} from "./pages/categories";
-import { supabaseClient } from "./utility";
+import { supabaseClient, getCachedRole } from "./utility";
+
+const accessControlProvider: AccessControlProvider = {
+  can: async ({ resource }) => {
+    if (resource === "admin-users") {
+      const role = await getCachedRole();
+      return { can: role === "admin" };
+    }
+    return { can: true };
+  },
+};
 import { RequestList } from "./pages/requests/list";
 import { RequestCreate } from "./pages/requests/create";
 import { RequestShow } from "./pages/requests/show";
@@ -46,8 +45,24 @@ import { AppIcon } from "./components/app-icon";
 import customTitleHandler from "./utility/customTitleHandler";
 import ThankYouPage from "./pages/responses/thank-you";
 import LandingPage from "./pages/landing";
+import InvitationListPage from "./pages/invitations";
+import ProfilePage from "./pages/profile";
+import AdminUsersPage from "./pages/admin/users";
+import LoginPage from "./pages/auth/login";
+import RegisterPage from "./pages/auth/register";
+import ForgotPasswordPage from "./pages/auth/forgot-password";
+import UpdatePasswordPage from "./pages/auth/update-password";
+import i18nProvider, { getLocale } from "./i18n";
 
 function App() {
+  // Re-mount Refine subtree on locale change so all translations refresh.
+  const [locale, setLocale] = useState(getLocale());
+  useEffect(() => {
+    const handler = () => setLocale(getLocale());
+    window.addEventListener("locale-change", handler);
+    return () => window.removeEventListener("locale-change", handler);
+  }, []);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <BrowserRouter>
@@ -57,27 +72,35 @@ function App() {
             <GlobalStyles styles={{ html: { WebkitFontSmoothing: "auto" } }} />
             <RefineSnackbarProvider>
               <Refine
+                key={locale}
                 dataProvider={dataProvider(supabaseClient)}
                 liveProvider={liveProvider(supabaseClient)}
                 authProvider={authProvider}
                 routerProvider={routerBindings}
                 notificationProvider={notificationProvider}
+                i18nProvider={i18nProvider}
+                accessControlProvider={accessControlProvider}
                 resources={[
                   {
                     name: "requests",
                     list: "/requests",
                     create: "/requests/create",
-                    edit: "/requests/edit/:id",
                     show: "/requests/show/:id",
                     icon: <RsvpIcon />,
                     meta: {
                       canDelete: true,
                     },
                   },
+                  {
+                    name: "admin-users",
+                    list: "/admin/users",
+                    icon: <AdminPanelSettingsIcon />,
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
+                  liveMode: "auto",
                 }}
               >
                 <Routes>
@@ -87,11 +110,10 @@ function App() {
                     <Route path=":id" element={<ResponseCreate />} />
                   </Route>
                   <Route path="/thank-you" element={<ThankYouPage />} />
+
                   <Route
                     element={
-                      <Authenticated
-                        fallback={<CatchAllNavigate to="/login" />}
-                      >
+                      <Authenticated fallback={<CatchAllNavigate to="/login" />}>
                         <ThemedLayoutV2
                           Header={() => <Header sticky />}
                           Title={({ collapsed }) => (
@@ -103,30 +125,19 @@ function App() {
                       </Authenticated>
                     }
                   >
-                    {/* <Route
-                      index
-                      element={<NavigateToResource resource="requests" />}
-                    /> */}
-                    <Route path="/blog-posts">
-                      <Route index element={<BlogPostList />} />
-                      <Route path="create" element={<BlogPostCreate />} />
-                      <Route path="edit/:id" element={<BlogPostEdit />} />
-                      <Route path="show/:id" element={<BlogPostShow />} />
-                    </Route>
-                    <Route path="/categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
-                    </Route>
                     <Route path="/requests">
                       <Route index element={<RequestList />} />
                       <Route path="create" element={<RequestCreate />} />
-                      {/* <Route path="edit/:id" element={<MuiInferencer />} /> */}
                       <Route path="show/:id" element={<RequestShow />} />
+                      <Route path=":id/invitations" element={<InvitationListPage />} />
+                    </Route>
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/admin">
+                      <Route path="users" element={<AdminUsersPage />} />
                     </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
+
                   <Route
                     element={
                       <Authenticated fallback={<Outlet />}>
@@ -134,32 +145,13 @@ function App() {
                       </Authenticated>
                     }
                   >
-                    <Route
-                      path="/login"
-                      element={
-                        <AuthPage
-                          type="login"
-                          title={<AppIcon />}
-                          formProps={{
-                            defaultValues: {
-                              email: "info@refine.dev",
-                              password: "refine-supabase",
-                            },
-                          }}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/register"
-                      element={<AuthPage type="register" title={<AppIcon />} />}
-                    />
-                    <Route
-                      path="/forgot-password"
-                      element={
-                        <AuthPage type="forgotPassword" title={<AppIcon />} />
-                      }
-                    />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   </Route>
+
+                  {/* Update password route — accessible both saat recovery session dari email link maupun user yang sudah login */}
+                  <Route path="/update-password" element={<UpdatePasswordPage />} />
                 </Routes>
 
                 <RefineKbar />

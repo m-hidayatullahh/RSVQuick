@@ -23,7 +23,7 @@ export default function ValueDisplay({
   switch (typeof value) {
     case "string":
       valueDisplay = isDate ? (
-        <DateField value={value} />
+        <DateField value={value} format="DD MMM YYYY HH:mm [WIB]" />
       ) : isColor ? (
         <Box bgcolor={value} width={50} height={50}></Box>
       ) : (

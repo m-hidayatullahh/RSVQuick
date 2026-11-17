@@ -19,15 +19,10 @@ export const ColorModeContext = createContext<ColorModeContextType>(
 export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
   children,
 }) => {
+  // Default "light" — hormati pilihan user yang disimpan di localStorage,
+  // tapi abaikan preferensi system (sebelumnya kalau OS dark, app ikut dark).
   const colorModeFromLocalStorage = localStorage.getItem("colorMode");
-  const isSystemPreferenceDark = window?.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches;
-
-  const systemPreference = isSystemPreferenceDark ? "dark" : "light";
-  const [mode, setMode] = useState(
-    colorModeFromLocalStorage || systemPreference
-  );
+  const [mode, setMode] = useState(colorModeFromLocalStorage || "light");
 
   useEffect(() => {
     window.localStorage.setItem("colorMode", mode);

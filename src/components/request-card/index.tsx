@@ -11,14 +11,9 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 import { useCreate, useCreateMany, useNotification } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import tc from "tinycolor2";
-import {
-  ThemeProvider,
-  createTheme,
-  darken,
-  lighten,
-} from "@mui/material/styles";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import dayjs from "../../utility/dayjs";
 import { Button } from "@mui/material";
 import { useForm } from "@refinedev/react-hook-form";
@@ -55,6 +50,11 @@ interface RequestCardProps {
   responses?: IResponse[];
   surveys?: Survey[];
   style?: string;
+  customMessage?: string | null;
+  replyPrefix?: string | null;
+  rsvpTitle?: string | null;
+  questionLabel?: string | null;
+  prefillName?: string;
 }
 
 export const RequestCard: React.FC<RequestCardProps> = ({
@@ -68,21 +68,23 @@ export const RequestCard: React.FC<RequestCardProps> = ({
   secondaryColor,
   primaryColor,
   secondary_gradient = false,
-  background_gradient = false,
   requestId,
   italicize,
   responses,
   surveys,
   style = "DEFAULT",
+  customMessage,
+  replyPrefix,
+  rsvpTitle,
+  questionLabel,
+  prefillName = "",
 }) => {
   const {
-    saveButtonProps,
-    refineCore: { formLoading, onFinish },
+    refineCore: { onFinish },
     register,
     setValue,
     watch,
     handleSubmit,
-    control,
     formState: { errors },
   } = useForm<IResponse>();
 
@@ -90,115 +92,85 @@ export const RequestCard: React.FC<RequestCardProps> = ({
     register: surveyRegister,
     handleSubmit: handleSurveySubmit,
     getValues: getSurveyValues,
-    formState: { errors: surveyErrors },
   } = useForm<SurveyAnswer[]>();
 
   const { mutate } = useCreate<IResponse>();
   const { mutate: createAnswers } = useCreateMany<IAnswer>();
-
   const navigate = useNavigate();
   const { open } = useNotification();
 
-  const defaultTextColor = tc(secondaryColor).isLight() ? "black" : "white";
+  React.useEffect(() => {
+    if (prefillName) {
+      setValue("responder_name", prefillName);
+    }
+  }, [prefillName, setValue]);
 
+  const defaultTextColor = tc(secondaryColor || "#fff").isLight()
+    ? "black"
+    : "white";
   const responseAnswer = watch("accept");
   const accept = responseAnswer === "true";
 
   const onSubmit = async (data: FieldValues) => {
-    if (requestId) {
-      const surveyAnswers = getSurveyValues()?.answers as IAnswer[];
-      if (
-        surveys &&
-        surveyAnswers &&
-        surveyAnswers?.filter((answer) => answer.choice_id).length !==
-          surveys.length &&
-        accept
-      ) {
-        open?.({
-          type: "error",
-          key: "unanswered",
-          description: "Please complete the survey.",
-          message: "Answer the survey to complete your response.",
-        });
-        return;
-      }
+    if (!requestId) return;
 
-      const responseId = uuidv4();
-
-      mutate(
-        {
-          resource: "responses",
-          values: {
-            ...data,
-            id: responseId,
-            request_id: requestId,
-          },
-        },
-        {
-          onSuccess: (data, variables) => {
-            if (accept) {
-              handleSurveySubmit(
-                async (values) => {
-                  const surveyAnswers = values.answers as SurveyAnswer[];
-                  createAnswers({
-                    resource: "answers",
-                    errorNotification: false,
-                    successNotification: false,
-                    values: surveyAnswers.map((answer) => ({
-                      ...answer,
-                      response_id: responseId,
-                    })),
-                  });
-                },
-                (error) => console.log(error, "ERROR")
-              )();
-            }
-            navigate("/thank-you");
-          },
-        }
-      );
+    const surveyAnswers = getSurveyValues()?.answers as IAnswer[];
+    if (
+      surveys &&
+      surveyAnswers &&
+      surveyAnswers.filter((a) => a.choice_id).length !== surveys.length &&
+      accept
+    ) {
+      open?.({
+        type: "error",
+        key: "unanswered",
+        description: "Harap lengkapi survei.",
+        message: "Jawab semua pertanyaan untuk menyelesaikan konfirmasi.",
+      });
+      return;
     }
+
+    const responseId = uuidv4();
+    mutate(
+      {
+        resource: "responses",
+        values: { ...data, id: responseId, request_id: requestId },
+      },
+      {
+        onSuccess: () => {
+          if (accept) {
+            handleSurveySubmit(async (values) => {
+              const answers = values.answers as SurveyAnswer[];
+              createAnswers({
+                resource: "answers",
+                errorNotification: false,
+                successNotification: false,
+                values: answers.map((a) => ({ ...a, response_id: responseId })),
+              });
+            })();
+          }
+          navigate("/thank-you");
+        },
+      }
+    );
   };
 
   const theme = createTheme({
-    typography: {
-      fontFamily: fontFamily,
-    },
+    typography: { fontFamily },
     components: {
       MuiFilledInput: {
         styleOverrides: {
-          root: {
-            ":before": {
-              borderColor: defaultTextColor,
-            },
-            color: defaultTextColor,
-          },
+          root: { ":before": { borderColor: defaultTextColor }, color: defaultTextColor },
         },
       },
-      MuiFormLabel: {
-        styleOverrides: {
-          root: {
-            color: defaultTextColor,
-          },
-        },
-      },
-      MuiRadio: {
-        styleOverrides: {
-          root: {
-            color: defaultTextColor,
-          },
-        },
-      },
+      MuiFormLabel: { styleOverrides: { root: { color: defaultTextColor } } },
+      MuiRadio: { styleOverrides: { root: { color: defaultTextColor } } },
     },
-    palette: {
-      primary: {
-        main: primaryColor || "#000",
-      },
-    },
+    palette: { primary: { main: primaryColor || "#000" } },
   });
 
   const confirmedAttendees = useMemo(
-    () => responses?.filter((res) => res.accept)?.length || 0,
+    () => responses?.filter((r) => r.accept)?.length || 0,
     [responses]
   );
 
@@ -209,7 +181,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
 
   const secondaryGradientColor = useMemo(
     () =>
-      `linear-gradient(${tc(secondaryColor)
+      `linear-gradient(${tc(secondaryColor || "#fff")
         .analogous()
         .slice(1)
         .reverse()
@@ -217,13 +189,17 @@ export const RequestCard: React.FC<RequestCardProps> = ({
     [secondaryColor]
   );
 
+  const displayRsvpTitle = rsvpTitle || "RSVP";
+  const displayReplyPrefix = replyPrefix || "Kindly Reply Before";
+  const displayQuestionLabel = questionLabel || "Are you going?";
+
   return (
     <ThemeProvider theme={theme}>
       <Box
         sx={{
           borderRadius: 2,
           overflow: "hidden",
-          fontFamily: fontFamily,
+          fontFamily,
           fontStyle: italicize ? "italic" : "normal",
           background:
             style === "DEFAULT"
@@ -267,6 +243,16 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           <Typography textAlign="center" color={primaryColor}>
             {address}
           </Typography>
+          {customMessage && (
+            <Typography
+              textAlign="center"
+              color={primaryColor}
+              mt={2}
+              sx={{ whiteSpace: "pre-wrap" }}
+            >
+              {customMessage}
+            </Typography>
+          )}
           <Box mt={4}>
             <Typography
               fontSize={32}
@@ -274,16 +260,18 @@ export const RequestCard: React.FC<RequestCardProps> = ({
               textAlign="center"
               color={primaryColor}
             >
-              RSVP{closed ? " (CLOSED)" : ""}
+              {displayRsvpTitle}
+              {closed ? " (DITUTUP)" : ""}
             </Typography>
             <Typography fontSize={24} textAlign="center" color={primaryColor}>
-              Kindly Reply Before {dayjs(closeDate).format("Do MMMM YYYY")}
+              {displayReplyPrefix} {dayjs(closeDate).format("Do MMMM YYYY")}
             </Typography>
           </Box>
         </Box>
+
         <Box
           component="form"
-          onSubmit={handleSubmit(onSubmit, (error) => console.log(error))}
+          onSubmit={handleSubmit(onSubmit, (err) => console.error(err))}
           px={4}
           pb={4}
         >
@@ -291,42 +279,34 @@ export const RequestCard: React.FC<RequestCardProps> = ({
             <Box my={2}>
               <TextField
                 {...register("responder_name", {
-                  required: "This field is required",
+                  required: "Nama harus diisi",
                 })}
                 error={!!(errors as any)?.responder_name}
                 helperText={(errors as any)?.responder_name?.message}
                 InputLabelProps={{ shrink: true }}
                 type="text"
-                label="Your Name"
+                label="Nama Anda"
                 name="responder_name"
                 variant="standard"
               />
             </Box>
             <FormControl error={!!(errors as any)?.accept}>
               <FormLabel
-                id="demo-radio-buttons-group-label"
                 sx={{ textAlign: "center", color: primaryColor }}
               >
-                Are you going?
+                {displayQuestionLabel}
               </FormLabel>
-              <RadioGroup
-                aria-labelledby="demo-radio-buttons-group-label"
-                name="radio-buttons-group"
-              >
+              <RadioGroup name="radio-buttons-group">
                 <Box display="flex" justifyContent="space-between" gap={4}>
                   <FormControlLabel
                     value={false}
-                    {...register("accept", {
-                      required: "This field is required",
-                    })}
+                    {...register("accept", { required: "Harus dipilih" })}
                     control={<Radio />}
                     label={rejectionLabel}
                   />
                   <FormControlLabel
                     value={true}
-                    {...register("accept", {
-                      required: "This field is required",
-                    })}
+                    {...register("accept", { required: "Harus dipilih" })}
                     control={<Radio />}
                     label={acceptanceLabel}
                   />
@@ -334,10 +314,10 @@ export const RequestCard: React.FC<RequestCardProps> = ({
               </RadioGroup>
             </FormControl>
           </Box>
+
           {surveys && accept && surveys.length > 0 && (
             <>
-              <Divider sx={{ my: 4, color: "red" }} />
-
+              <Divider sx={{ my: 4 }} />
               <Stack gap={2}>
                 <Typography
                   fontSize={24}
@@ -345,14 +325,9 @@ export const RequestCard: React.FC<RequestCardProps> = ({
                   color="primary.main"
                   textAlign="center"
                 >
-                  Questions
+                  Pertanyaan
                 </Typography>
-                <Box
-                  display="flex"
-                  flexWrap="wrap"
-                  gap={4}
-                  justifyContent="center"
-                >
+                <Box display="flex" flexWrap="wrap" gap={4} justifyContent="center">
                   {surveys.map((survey, index) => (
                     <Box
                       border={2}
@@ -362,43 +337,24 @@ export const RequestCard: React.FC<RequestCardProps> = ({
                       key={survey.question.id}
                     >
                       <TextField
-                        {...surveyRegister(`answers.${index}.question_id`, {
-                          required: "This field is required",
-                        })}
+                        {...surveyRegister(`answers.${index}.question_id`)}
                         type="text"
-                        name="question_id"
                         defaultValue={survey.question.id}
                         sx={{ display: "none" }}
                       />
-                      <FormControl error={!!(errors as any)?.accept} fullWidth>
-                        <FormLabel
-                          id="demo-radio-buttons-group-label"
-                          sx={{
-                            textAlign: "left",
-                            color: primaryColor,
-                          }}
-                        >
+                      <FormControl fullWidth>
+                        <FormLabel sx={{ textAlign: "left", color: primaryColor }}>
                           {survey.question.question_text}
                         </FormLabel>
-                        <RadioGroup
-                          key={survey.question.id}
-                          aria-labelledby="demo-radio-buttons-group-label"
-                          name="radio-buttons-group"
-                        >
-                          <Stack
-                            justifyContent="center"
-                            alignItems="flex-start"
-                          >
+                        <RadioGroup key={survey.question.id} name="radio-buttons-group">
+                          <Stack justifyContent="center" alignItems="flex-start">
                             {survey.choices.map((choice) => (
                               <FormControlLabel
                                 key={choice.id}
                                 value={choice.id}
-                                {...surveyRegister(
-                                  `answers.${index}.choice_id`,
-                                  {
-                                    required: "This field is required",
-                                  }
-                                )}
+                                {...surveyRegister(`answers.${index}.choice_id`, {
+                                  required: "Harus dipilih",
+                                })}
                                 control={<Radio />}
                                 label={choice.choice_text}
                               />
@@ -412,9 +368,10 @@ export const RequestCard: React.FC<RequestCardProps> = ({
               </Stack>
             </>
           )}
+
           <Box mt={4} textAlign="center">
-            <Button variant="contained" type="submit" disabled={closed}>
-              Submit Response
+            <Button variant="contained" type="submit" disabled={closed || !requestId}>
+              Kirim Konfirmasi
             </Button>
           </Box>
         </Box>

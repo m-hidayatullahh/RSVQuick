@@ -3,23 +3,33 @@ import {
   IResourceComponentsProps,
   useDelete,
   useNotification,
-  useMany,
   HttpError,
   useTable,
 } from "@refinedev/core";
 import { DateField, Show, useDataGrid } from "@refinedev/mui";
 import QRCode from "react-qr-code";
 
-import { Typography, Stack, Grid, Button, Divider } from "@mui/material";
+import {
+  Typography,
+  Stack,
+  Grid,
+  Button,
+  Divider,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import PeopleAltOutlined from "@mui/icons-material/PeopleAltOutlined";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import Background from "../../components/request-card/background";
 import { RequestCard } from "../../components/request-card";
 import Box from "@mui/material/Box";
 import ValueDisplay from "../../components/common/valueDisplay";
-import { useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { IRequest, IResponse } from "./list";
-
-import { useRef } from "react";
 import html2canvas from "html2canvas";
 import { useModalForm } from "@refinedev/react-hook-form";
 import { IAnswer, IChoice, IQuestion, Nullable } from "../../utility/types";
@@ -27,18 +37,17 @@ import { CreateQuestionDrawer } from "../../components/questions/question-create
 import QuestionShow from "../../components/questions/show";
 import { CreateChoiceDrawer } from "../../components/questions/choice-create-drawer";
 import EmptyResourceMessage from "../../components/common/empty-resource-message";
-
-const APP_URL = (
-  import.meta.env.VITE_APP_URL || window.location.origin
-).replace(/\/$/, "");
+import { Link } from "react-router-dom";
+import { useState } from "react";
 
 export const RequestShow: React.FC<IResourceComponentsProps> = () => {
   const { mutate } = useDelete();
   const { open } = useNotification();
-  const qrCodeRef = useRef(null);
-  const [selectedQuestion, setSelectedQuestion] = useState<IQuestion | null>(
-    null
-  );
+  const qrCodeRef = useRef<HTMLDivElement>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<IQuestion | null>(null);
+  const [deleteResponseTarget, setDeleteResponseTarget] = useState<IResponse | null>(null);
+
+  const appUrl = window.location.origin;
 
   const copyQRCodeAsImage = async () => {
     try {
@@ -47,119 +56,108 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
         canvas.toBlob((blob) => {
           if (blob) {
             navigator.clipboard.write([
-              new ClipboardItem({
-                "image/png": blob,
-              }),
+              new ClipboardItem({ "image/png": blob }),
             ]);
           }
         });
       }
       open?.({
         type: "success",
-        key: "copy-success",
-        message: "Success",
-        description: "QR Code Copied to Clipboard",
+        key: "copy-qr",
+        message: "Berhasil",
+        description: "QR Code disalin ke clipboard.",
       });
     } catch (error) {
-      console.log(error);
+      open?.({
+        type: "error",
+        key: "copy-qr-err",
+        message: "Gagal",
+        description: "Tidak dapat menyalin QR Code.",
+      });
     }
   };
 
   const copyLinkToClipboard = () => {
     if (request) {
-      navigator.clipboard.writeText(
-        `${APP_URL}/r/${request?.id}`
-      );
+      navigator.clipboard.writeText(`${appUrl}/r/${request.id}`);
       open?.({
         type: "success",
-        key: "copy-link-success",
-        description: "Link copied to clipboard",
-        message:
-          "Your RSVP link has been copied to your clipboard. Share it with your guests.",
+        key: "copy-link",
+        description: "Link berhasil disalin",
+        message: "Bagikan link RSVP ini ke tamu undangan.",
       });
     }
   };
 
+  const shareWhatsApp = () => {
+    if (!request) return;
+    const link = `${appUrl}/r/${request.id}`;
+    const msg = encodeURIComponent(
+      `Anda diundang ke acara: *${request.title}*\n\nKonfirmasi kehadiran Anda di:\n${link}`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  };
+
   const responseColumns = useMemo<GridColDef[]>(
     () => [
-      {
-        field: "id",
-        headerName: "Id",
-        type: "number",
-        minWidth: 25,
-      },
+      { field: "id", headerName: "ID", minWidth: 80 },
       {
         field: "accepted_at",
         flex: 1,
-        headerName: "Accepted At",
-        minWidth: 100,
-        renderCell: function render({ value }) {
-          return <DateField value={value} />;
-        },
+        headerName: "Waktu",
+        minWidth: 140,
+        renderCell: ({ value }) => (
+          <DateField value={value} format="DD MMM YYYY HH:mm" />
+        ),
       },
       {
         field: "responder_name",
         flex: 1,
-        headerName: "Name",
+        headerName: "Nama",
         minWidth: 150,
       },
       {
         field: "accept",
         flex: 1,
-        headerName: "Accept",
+        headerName: "Hadir",
         type: "boolean",
-        minWidth: 100,
+        minWidth: 80,
       },
       {
         field: "actions",
-        headerName: "Actions",
+        headerName: "Aksi",
         sortable: false,
-        renderCell: function render({ row }) {
-          return (
-            <>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => {
-                  mutate({
-                    resource: "responses",
-                    id: row.id,
-                  });
-                }}
-              >
-                Dismiss
-              </Button>
-            </>
-          );
-        },
+        renderCell: ({ row }) => (
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            onClick={() => setDeleteResponseTarget(row)}
+          >
+            Hapus
+          </Button>
+        ),
         align: "center",
         headerAlign: "center",
-        minWidth: 150,
+        minWidth: 100,
       },
     ],
-    [mutate]
+    []
   );
+
   const { queryResult } = useShow<IRequest>();
   const { data, isLoading } = queryResult;
   const request = data?.data;
 
-  const { dataGridProps: responseDataGridProps } = useDataGrid<IResponse>({
+  const { dataGridProps: responseDataGridProps, tableQueryResult: responseTableQueryResult } = useDataGrid<IResponse>({
     resource: "responses",
-    queryOptions: {
-      enabled: !!request,
-    },
+    queryOptions: { enabled: !!request },
     filters: {
-      permanent: [
-        {
-          field: "request_id",
-          operator: "eq",
-          value: request?.id || "",
-        },
-      ],
+      permanent: [{ field: "request_id", operator: "eq", value: request?.id ?? "" }],
     },
+    pagination: { pageSize: 100 },
   });
 
-  // request drawer
   const questionCreateDrawerFormProps = useModalForm<
     IQuestion,
     HttpError,
@@ -169,12 +167,8 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
     syncWithLocation: true,
     warnWhenUnsavedChanges: false,
   });
+  const { modal: { show: showQuestionCreateDrawer } } = questionCreateDrawerFormProps;
 
-  const {
-    modal: { show: showQuestionCreateDrawer },
-  } = questionCreateDrawerFormProps;
-
-  // choice drawer
   const choiceCreateDrawerFormProps = useModalForm<
     IChoice,
     HttpError,
@@ -183,81 +177,51 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
     refineCoreProps: { action: "create", resource: "choices" },
     syncWithLocation: true,
   });
+  const { modal: { show: showChoiceCreateDrawer } } = choiceCreateDrawerFormProps;
 
-  const {
-    modal: { show: showChoiceCreateDrawer },
-  } = choiceCreateDrawerFormProps;
-
-  const { tableQueryResult: questionQueryResult } = useTable<
-    IQuestion,
-    HttpError
-  >({
+  const { tableQueryResult: questionQueryResult } = useTable<IQuestion, HttpError>({
     resource: "questions",
     queryOptions: { enabled: !!request },
     filters: {
+      permanent: [{ field: "request_id", operator: "eq", value: request?.id }],
+    },
+  });
+  const questions = questionQueryResult.data?.data;
+
+  const { tableQueryResult: choicesQueryResult } = useTable<IChoice, HttpError>({
+    resource: "choices",
+    queryOptions: { enabled: !!questions },
+    filters: {
       permanent: [
-        {
-          field: "request_id",
-          operator: "eq",
-          value: request?.id,
-        },
+        { field: "question_id", operator: "in", value: questions?.map((q) => q.id) },
       ],
     },
   });
-
-  const questions = questionQueryResult.data?.data;
-
-  const { tableQueryResult: choicesQueryResult } = useTable<IChoice, HttpError>(
-    {
-      resource: "choices",
-      queryOptions: { enabled: !!questions },
-      filters: {
-        permanent: [
-          {
-            field: "question_id",
-            operator: "in",
-            value: questions?.map((q) => q.id),
-          },
-        ],
-      },
-    }
-  );
-
   const choices = choicesQueryResult.data?.data;
 
-  const { tableQueryResult: answerQueryReseult } = useTable<IAnswer, HttpError>(
-    {
-      resource: "answers",
-      queryOptions: { enabled: !!questions },
-      filters: {
-        permanent: [
-          {
-            field: "question_id",
-            operator: "in",
-            value: questions?.map((q) => q.id),
-          },
-        ],
-      },
-    }
-  );
-
-  const answers = answerQueryReseult.data?.data;
+  const { tableQueryResult: answerQueryResult } = useTable<IAnswer, HttpError>({
+    resource: "answers",
+    queryOptions: { enabled: !!questions },
+    filters: {
+      permanent: [
+        { field: "question_id", operator: "in", value: questions?.map((q) => q.id) },
+      ],
+    },
+  });
+  const answers = answerQueryResult.data?.data;
 
   const confirmedAttendeeResponses: IResponse[] = useMemo(
     () => responseDataGridProps.rows.filter((res) => res.accept),
     [responseDataGridProps]
   );
+
   const confirmedAttendeeAnswers = useMemo(
     () =>
-      answers?.filter((answer) =>
-        confirmedAttendeeResponses
-          .map((res) => res.id)
-          .includes(answer.response_id)
+      answers?.filter((a) =>
+        confirmedAttendeeResponses.map((r) => r.id).includes(a.response_id)
       ),
     [answers, confirmedAttendeeResponses]
   );
-
-  console.log({ confirmedAttendeeAnswers, confirmedAttendeeResponses });
 
   return (
     <Show
@@ -265,8 +229,24 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
       canEdit={false}
       headerButtons={({ defaultButtons }) => (
         <>
+          <Button
+            component={Link}
+            to={`/requests/${request?.id}/invitations`}
+            variant="outlined"
+            startIcon={<PeopleAltOutlined />}
+          >
+            Daftar Undangan
+          </Button>
           <Button onClick={copyLinkToClipboard} variant="contained">
-            Share RSVP Link
+            Salin Link
+          </Button>
+          <Button
+            onClick={shareWhatsApp}
+            variant="contained"
+            color="success"
+            startIcon={<WhatsAppIcon />}
+          >
+            WhatsApp
           </Button>
           {defaultButtons}
         </>
@@ -274,133 +254,85 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
     >
       {request && (
         <Box>
-          <Box>
-            <Background
+          <Background
+            backgroundColor={request.background_color}
+            backgroundImage={request.background_image}
+            background_gradient={request.background_gradient}
+          >
+            <RequestCard
               backgroundColor={request.background_color}
-              background_gradient={request.background_gradient}
-            >
-              <RequestCard
-                backgroundColor={request.background_color}
-                title={request.title}
-                address={request.address}
-                acceptanceLabel={request.acceptance_label}
-                rejectionLabel={request.rejection_label}
-                closeDate={request.close_date}
-                secondaryColor={request.secondary_color}
-                secondary_gradient={request.secondary_gradient}
-                primaryColor={request.primary_color}
-                limit={request.limit}
-                fontFamily={request.font_family}
-                italicize={request.italicize}
-                responses={responseDataGridProps.rows as IResponse[]}
-              />
-            </Background>
-          </Box>
+              title={request.title}
+              address={request.address}
+              acceptanceLabel={request.acceptance_label}
+              rejectionLabel={request.rejection_label}
+              closeDate={request.close_date}
+              secondaryColor={request.secondary_color}
+              secondary_gradient={request.secondary_gradient}
+              primaryColor={request.primary_color}
+              limit={request.limit}
+              fontFamily={request.font_family}
+              italicize={request.italicize}
+              responses={responseDataGridProps.rows as IResponse[]}
+              style={request.style}
+              customMessage={request.custom_message}
+              replyPrefix={request.reply_prefix}
+              rsvpTitle={request.rsvp_title}
+              questionLabel={request.question_label}
+            />
+          </Background>
+
           <Grid container spacing={2} mt={4}>
             <Grid item xs={12} lg={6}>
               <Stack spacing={2}>
                 <Typography fontWeight={600} fontSize={24}>
-                  Scan Me!
+                  QR Code
                 </Typography>
                 {request.id && (
                   <Stack gap={2}>
-                    <Box ref={qrCodeRef} width="min-content">
-                      <QRCode
-                        value={`${APP_URL}/r/${request.id as string}`}
-                      />
+                    <Box ref={qrCodeRef} width="min-content" bgcolor="white" p={1} borderRadius={1}>
+                      <QRCode value={`${appUrl}/r/${request.id}`} />
                     </Box>
-                    <Stack direction="row" gap={2} alignItems="center">
-                      <Button onClick={copyQRCodeAsImage} variant="outlined">
-                        Copy QR Code as Image
+                    <Stack direction="row" gap={2} flexWrap="wrap">
+                      <Button onClick={copyQRCodeAsImage} variant="outlined" size="small">
+                        Salin QR Code
+                      </Button>
+                      <Button onClick={copyLinkToClipboard} variant="outlined" size="small">
+                        Salin Link RSVP
                       </Button>
                     </Stack>
+                    <Typography variant="caption" color="text.secondary" sx={{ wordBreak: "break-all" }}>
+                      {appUrl}/r/{request.id}
+                    </Typography>
                   </Stack>
                 )}
               </Stack>
             </Grid>
             <Grid item xs={12} lg={6}>
-              <Box>
-                <Box mb={2}>
-                  <Typography fontWeight={600} fontSize={24}>
-                    Info
-                  </Typography>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6} lg={12}>
-                    <ValueDisplay label="Title" value={request.title} />
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={12}>
-                    <ValueDisplay label="Address" value={request.address} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Accept Label"
-                      value={request.acceptance_label}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Reject Label"
-                      value={request.rejection_label}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay label="Limit" value={request.limit} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Close Date"
-                      value={request.close_date}
-                      isDate
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Secondary Color"
-                      value={request.secondary_color}
-                      isColor
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Primary Color"
-                      value={request.primary_color}
-                      isColor
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="BG Color"
-                      value={request.background_color}
-                      isColor
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay label="Italicize" value={request.italicize} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <ValueDisplay
-                      label="Font Family"
-                      value={request.font_family}
-                    />
-                  </Grid>
-                </Grid>
+              <Box mb={2}>
+                <Typography fontWeight={600} fontSize={24}>Info</Typography>
               </Box>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}><ValueDisplay label="Judul" value={request.title} /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Lokasi" value={request.address} /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Label Hadir" value={request.acceptance_label} /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Label Tidak Hadir" value={request.rejection_label} /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Batas Tamu" value={request.limit} /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Batas RSVP" value={request.close_date} isDate /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Warna Sekunder" value={request.secondary_color} isColor /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Warna Primer" value={request.primary_color} isColor /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Warna Latar" value={request.background_color} isColor /></Grid>
+                <Grid item xs={12} md={6}><ValueDisplay label="Font" value={request.font_family} /></Grid>
+              </Grid>
             </Grid>
           </Grid>
+
           <Divider sx={{ my: 4 }} />
+
           <Stack gap={2}>
-            <Stack
-              justifyContent="space-between"
-              alignItems="center"
-              direction="row"
-            >
-              <Typography fontSize={24}>Questions</Typography>
-              <Button
-                onClick={() => showQuestionCreateDrawer()}
-                variant="outlined"
-              >
-                Create Questions
+            <Stack justifyContent="space-between" alignItems="center" direction="row">
+              <Typography fontSize={24}>Pertanyaan Survey</Typography>
+              <Button onClick={() => showQuestionCreateDrawer()} variant="outlined">
+                Tambah Pertanyaan
               </Button>
             </Stack>
             {questions && questions.length ? (
@@ -411,20 +343,17 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
                     question={q}
                     showChoiceCreateDrawer={showChoiceCreateDrawer}
                     setSelectedQuestion={setSelectedQuestion}
-                    answers={confirmedAttendeeAnswers?.filter(
-                      (answer) => answer.question_id === q.id
-                    )}
+                    answers={confirmedAttendeeAnswers?.filter((a) => a.question_id === q.id)}
                     responses={confirmedAttendeeResponses}
-                    choices={choices?.filter(
-                      (choice) => choice.question_id === q.id
-                    )}
+                    choices={choices?.filter((c) => c.question_id === q.id)}
                   />
                 ))}
               </Stack>
             ) : (
-              <EmptyResourceMessage message="No questions. Create some." />
+              <EmptyResourceMessage message="Belum ada pertanyaan. Buat pertanyaan baru." />
             )}
           </Stack>
+
           <CreateQuestionDrawer
             showChoiceCreateDrawer={showChoiceCreateDrawer}
             drawerProps={questionCreateDrawerFormProps}
@@ -434,19 +363,62 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
             drawerProps={choiceCreateDrawerFormProps}
             question={selectedQuestion}
           />
+
           <Divider sx={{ my: 4 }} />
+
           <Stack gap={2}>
-            <Typography fontWeight="bold" fontSize={24}>
-              Responses{" "}
-              {responseDataGridProps.rows.filter((row) => row.accept).length}/
-              {request.limit}
-            </Typography>
+            <Stack direction="row" alignItems="center" gap={2}>
+              <Typography fontWeight="bold" fontSize={24}>
+                Respon Tamu
+              </Typography>
+              <Chip
+                label={`${responseDataGridProps.rows.filter((r) => r.accept).length} Hadir / ${request.limit ?? 0} Kapasitas`}
+                color="primary"
+              />
+            </Stack>
             <DataGrid
               columns={responseColumns}
               {...responseDataGridProps}
               autoHeight
+              pageSizeOptions={[25, 50, 100]}
             />
           </Stack>
+
+          <Dialog
+            open={!!deleteResponseTarget}
+            onClose={() => setDeleteResponseTarget(null)}
+            maxWidth="xs"
+            fullWidth
+          >
+            <DialogTitle>Hapus Respon?</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Hapus respon dari <strong>{deleteResponseTarget?.responder_name}</strong>?
+                Tindakan ini tidak dapat dibatalkan.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteResponseTarget(null)}>Batal</Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => {
+                  if (!deleteResponseTarget) return;
+                  mutate(
+                    { resource: "responses", id: deleteResponseTarget.id },
+                    {
+                      onSettled: () => {
+                        setDeleteResponseTarget(null);
+                        responseTableQueryResult.refetch();
+                      },
+                    }
+                  );
+                }}
+              >
+                Hapus
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       )}
     </Show>

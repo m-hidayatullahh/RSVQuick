@@ -1,17 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import { AppIcon } from "../../components/app-icon";
 import { Link } from "react-router-dom";
-import EqualizerIcon from "@mui/icons-material/Equalizer";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
 import QuestionMarkIcon from "@mui/icons-material/QuestionMark";
+import DarkModeOutlined from "@mui/icons-material/DarkModeOutlined";
+import LightModeOutlined from "@mui/icons-material/LightModeOutlined";
 import { useGetIdentity } from "@refinedev/core";
 import { IUser } from "../../components/header";
+import { ColorModeContext } from "../../contexts/color-mode";
 
 const Feature = ({
   title,
@@ -44,17 +47,24 @@ const Feature = ({
 
 export default function LandingPage() {
   const { data: user } = useGetIdentity<IUser>();
+  const { mode, setMode } = useContext(ColorModeContext);
 
   return (
-    <Stack>
+    <Stack bgcolor="background.default" color="text.primary" minHeight="100vh">
       <Box
         component="header"
         p={2}
         display="flex"
         justifyContent="space-between"
+        alignItems="center"
       >
         <AppIcon />
-        <Stack direction="row" gap={2}>
+        <Stack direction="row" gap={1} alignItems="center">
+          <Tooltip title={mode === "dark" ? "Mode Terang" : "Mode Gelap"}>
+            <IconButton onClick={() => setMode()} color="inherit" size="small">
+              {mode === "dark" ? <LightModeOutlined /> : <DarkModeOutlined />}
+            </IconButton>
+          </Tooltip>
           {user ? (
             <Button
               variant="contained"

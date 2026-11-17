@@ -9,6 +9,7 @@ import { useGetIdentity } from "@refinedev/core";
 export interface IRequest {
   id: string;
   background_color: string;
+  background_image: string | null;
   title: string;
   address: string;
   acceptance_label: string;
@@ -22,6 +23,10 @@ export interface IRequest {
   background_gradient: boolean;
   secondary_gradient: boolean;
   style: string;
+  custom_message: string | null;
+  reply_prefix: string | null;
+  rsvp_title: string | null;
+  question_label: string | null;
 }
 
 export interface IResponse {
@@ -29,6 +34,7 @@ export interface IResponse {
   responder_name: string;
   accepted_at: string;
   accept: boolean;
+  request_id: string;
 }
 
 export const RequestList: React.FC<IResourceComponentsProps> = () => {
@@ -36,16 +42,9 @@ export const RequestList: React.FC<IResourceComponentsProps> = () => {
 
   const { data } = useList<IRequest>({
     resource: "requests",
-    queryOptions: {
-      enabled: !!user,
-    },
-    filters: [
-      {
-        field: "user_id",
-        operator: "eq",
-        value: user?.id,
-      },
-    ],
+    queryOptions: { enabled: !!user },
+    filters: [{ field: "user_id", operator: "eq", value: user?.id }],
+    pagination: { pageSize: 100 },
   });
 
   const requests = data?.data;
@@ -70,9 +69,9 @@ export const RequestList: React.FC<IResourceComponentsProps> = () => {
             justifyContent="center"
           >
             <Stack gap={4} alignItems="center">
-              <Typography color="palette.text.primary">
-                No RSVP requests. You can start creating one by pushing the
-                "Create" button.
+              <Typography>
+                Belum ada undangan. Buat undangan pertama Anda dengan menekan
+                tombol "Create".
               </Typography>
               <CreateButton />
             </Stack>

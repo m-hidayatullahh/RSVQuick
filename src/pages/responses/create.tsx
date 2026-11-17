@@ -1,7 +1,7 @@
 import { HttpError, useOne, useTable } from "@refinedev/core";
 import { RequestCard } from "../../components/request-card";
 import Background from "../../components/request-card/background";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { IRequest, IResponse } from "../requests/list";
 import { useDocumentTitle } from "@refinedev/react-router-v6";
 import { IChoice, IQuestion } from "../../utility/types";
@@ -9,74 +9,50 @@ import { CircularProgress } from "@mui/material";
 
 export const ResponseCreate: React.FC = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const prefillName = searchParams.get("name") ?? "";
 
   const { data } = useOne<IRequest, HttpError>({
     resource: "requests",
     id,
   });
 
-  useDocumentTitle(`${data?.data?.title} | RSVQuick`);
+  useDocumentTitle(`${data?.data?.title ?? "RSVP"} | RSVQuick`);
 
   const request = data?.data;
-  const { tableQueryResult: responseTableQueryResult } = useTable<
-    IResponse,
-    HttpError
-  >({
+
+  const { tableQueryResult: responseTableQueryResult } = useTable<IResponse, HttpError>({
     resource: "responses",
-    queryOptions: {
-      enabled: !!data?.data,
-    },
+    queryOptions: { enabled: !!data?.data },
     filters: {
-      permanent: [
-        {
-          field: "request_id",
-          operator: "eq",
-          value: data?.data?.id || "",
-        },
-      ],
+      permanent: [{ field: "request_id", operator: "eq", value: data?.data?.id ?? "" }],
     },
   });
 
-  const { tableQueryResult: questionQueryResult } = useTable<
-    IQuestion,
-    HttpError
-  >({
+  const { tableQueryResult: questionQueryResult } = useTable<IQuestion, HttpError>({
     resource: "questions",
     queryOptions: { enabled: !!request },
     filters: {
+      permanent: [{ field: "request_id", operator: "eq", value: request?.id }],
+    },
+  });
+  const questions = questionQueryResult.data?.data;
+
+  const { tableQueryResult: choicesQueryResult } = useTable<IChoice, HttpError>({
+    resource: "choices",
+    queryOptions: { enabled: !!questions },
+    filters: {
       permanent: [
-        {
-          field: "request_id",
-          operator: "eq",
-          value: request?.id,
-        },
+        { field: "question_id", operator: "in", value: questions?.map((q) => q.id) },
       ],
     },
   });
-
-  const questions = questionQueryResult.data?.data;
-
-  const { tableQueryResult: choicesQueryResult } = useTable<IChoice, HttpError>(
-    {
-      resource: "choices",
-      queryOptions: { enabled: !!questions },
-      filters: {
-        permanent: [
-          {
-            field: "question_id",
-            operator: "in",
-            value: questions?.map((q) => q.id),
-          },
-        ],
-      },
-    }
-  );
-
   const choices = choicesQueryResult.data?.data;
 
   return data && id && responseTableQueryResult.data ? (
     <Background
       backgroundColor={data.data.background_color}
+      backgroundImage={data.data.background_image}
       responseView
       background_gradient={data.data.background_gradient}
     >
@@ -96,14 +72,19 @@ export const ResponseCreate: React.FC = () => {
         responses={responseTableQueryResult.data.data}
         secondary_gradient={data.data.secondary_gradient}
         style={data.data.style}
+        customMessage={data.data.custom_message}
+        replyPrefix={data.data.reply_prefix}
+        rsvpTitle={data.data.rsvp_title}
+        questionLabel={data.data.question_label}
+        prefillName={prefillName}
         surveys={questions?.map((q) => ({
           question: q,
-          choices: choices?.filter((c) => c.question_id === q.id) || [],
+          choices: choices?.filter((c) => c.question_id === q.id) ?? [],
         }))}
       />
     </Background>
   ) : (
-    <Background backgroundColor="background.default" responseView>
+    <Background backgroundColor="#f5f5f5" responseView>
       <CircularProgress />
     </Background>
   );

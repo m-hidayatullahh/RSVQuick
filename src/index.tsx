@@ -8,6 +8,7 @@ import "@fontsource/rochester";
 import "@fontsource-variable/merienda";
 import "@fontsource/kaushan-script";
 
+import "./utility/dayjs";
 import App from "./App";
 
 const container = document.getElementById("root") as HTMLElement;
