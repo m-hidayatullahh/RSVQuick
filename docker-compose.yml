@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_PROJECT_URL: ${VITE_SUPABASE_PROJECT_URL}
+        VITE_SUPABASE_KEY: ${VITE_SUPABASE_KEY}
+        VITE_APP_URL: ${VITE_APP_URL}
+    container_name: rsvquick
+    ports:
+      - "3000:80"
+    restart: unless-stopped
