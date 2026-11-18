@@ -8,4 +8,4 @@ Disallow: /questions
 Disallow: /choices
 Disallow: /answers
 
-Sitemap: https://rsvquick.com/sitemap.xml
+Sitemap: https://rsvp.jakcation.id/sitemap.xml

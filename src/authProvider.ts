@@ -2,7 +2,7 @@ import { AuthBindings } from "@refinedev/core";
 import { supabaseClient, clearRoleCache, getCachedRole } from "./utility";
 
 const authProvider: AuthBindings = {
-  login: async ({ email, password, providerName }) => {
+  login: async ({ email, password, providerName, captchaToken }: any) => {
     clearRoleCache();
     try {
       if (providerName) {
@@ -16,6 +16,7 @@ const authProvider: AuthBindings = {
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
+        options: captchaToken ? { captchaToken } : undefined,
       });
 
       if (error) return { success: false, error };
@@ -30,11 +31,12 @@ const authProvider: AuthBindings = {
     };
   },
 
-  register: async ({ email, password }) => {
+  register: async ({ email, password, captchaToken }: any) => {
     try {
       const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
+        options: captchaToken ? { captchaToken } : undefined,
       });
       if (error) return { success: false, error };
       if (data) return { success: true, redirectTo: "/login" };
@@ -47,7 +49,7 @@ const authProvider: AuthBindings = {
     };
   },
 
-  forgotPassword: async ({ email }) => {
+  forgotPassword: async ({ email, captchaToken }: any) => {
     const trimmed = (email ?? "").trim();
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!trimmed) {
@@ -69,7 +71,10 @@ const authProvider: AuthBindings = {
     try {
       const { error } = await supabaseClient.auth.resetPasswordForEmail(
         trimmed,
-        { redirectTo: `${window.location.origin}/update-password` }
+        {
+          redirectTo: `${window.location.origin}/update-password`,
+          ...(captchaToken ? { captchaToken } : {}),
+        }
       );
       // Rate limit atau error server — tampilkan ke user supaya ga bingung
       if (error) {

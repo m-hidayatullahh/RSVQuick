@@ -4,27 +4,37 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:image="http://www.google.com/schemas/sitemap-image/0.9">
   <url>
-    <loc>https://rsvquick.com/</loc>
+    <loc>https://rsvp.jakcation.id/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://rsvquick.com/logo.png</image:loc>
+      <image:loc>https://rsvp.jakcation.id/logo.png</image:loc>
       <image:title>RSVQuick</image:title>
     </image:image>
   </url>
   <url>
-    <loc>https://rsvquick.com/login</loc>
+    <loc>https://rsvp.jakcation.id/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rsvquick.com/register</loc>
+    <loc>https://rsvp.jakcation.id/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rsvquick.com/forgot-password</loc>
+    <loc>https://rsvp.jakcation.id/forgot-password</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://rsvp.jakcation.id/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://rsvp.jakcation.id/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
   </url>
 </urlset>

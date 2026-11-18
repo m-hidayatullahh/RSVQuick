@@ -22,6 +22,7 @@ import routerBindings, {
 } from "@refinedev/react-router-v6";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import authProvider from "./authProvider";
 import { Header } from "./components/header";
@@ -53,6 +54,10 @@ import LoginPage from "./pages/auth/login";
 import RegisterPage from "./pages/auth/register";
 import ForgotPasswordPage from "./pages/auth/forgot-password";
 import UpdatePasswordPage from "./pages/auth/update-password";
+import PrivacyPolicyPage from "./pages/legal/privacy";
+import TermsOfServicePage from "./pages/legal/terms";
+import NotFoundPage from "./pages/errors/not-found";
+import Analytics from "./components/analytics";
 import i18nProvider, { getLocale } from "./i18n";
 
 function App() {
@@ -65,6 +70,8 @@ function App() {
   }, []);
 
   return (
+    <HelmetProvider>
+    <Analytics />
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <BrowserRouter>
         <RefineKbarProvider>
@@ -112,6 +119,8 @@ function App() {
                     <Route path=":id" element={<ResponseCreate />} />
                   </Route>
                   <Route path="/thank-you" element={<ThankYouPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/terms" element={<TermsOfServicePage />} />
 
                   <Route
                     element={
@@ -138,7 +147,7 @@ function App() {
                     <Route path="/admin">
                       <Route path="users" element={<AdminUsersPage />} />
                     </Route>
-                    <Route path="*" element={<ErrorComponent />} />
+                    <Route path="*" element={<NotFoundPage />} />
                   </Route>
 
                   <Route
@@ -155,6 +164,9 @@ function App() {
 
                   {/* Update password route — accessible both saat recovery session dari email link maupun user yang sudah login */}
                   <Route path="/update-password" element={<UpdatePasswordPage />} />
+
+                  {/* Catch-all 404 for public routes */}
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
 
                 <RefineKbar />
@@ -166,6 +178,7 @@ function App() {
         </RefineKbarProvider>
       </BrowserRouter>
     </LocalizationProvider>
+    </HelmetProvider>
   );
 }
 

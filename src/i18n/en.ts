@@ -176,4 +176,98 @@ export default {
   "pages.register.heading": "Create your RSVQuick account",
   "pages.forgotPassword.heading": "Reset your RSVQuick password",
   "pages.updatePassword.heading": "Update your RSVQuick password",
+
+  // Legal — shared
+  "pages.legal.back": "Back",
+  "pages.legal.updated": "Last updated",
+  "pages.legal.updatedAt": "November 18, 2026",
+
+  // Footer links
+  "pages.landing.footer.privacy": "Privacy Policy",
+  "pages.landing.footer.terms": "Terms of Service",
+  "pages.landing.footer.rights": "All rights reserved.",
+
+  // Privacy Policy
+  "pages.privacy.title": "Privacy Policy",
+  "pages.privacy.intro":
+    "This Privacy Policy explains how Jakcation RSVPQuick (\"we\", \"us\") collects, uses, stores, and protects the information you provide when using our platform.",
+  "pages.privacy.s1.title": "1. Data We Collect",
+  "pages.privacy.s1.item1": "Account data: email, password (stored as a hash), and profile preferences.",
+  "pages.privacy.s1.item2": "Invitation & guest data: event info, guest lists, and attendance responses you create or receive.",
+  "pages.privacy.s1.item3": "Technical data: IP address, browser type, device, and access logs used for security and anonymous analytics.",
+  "pages.privacy.s2.title": "2. How We Use Your Data",
+  "pages.privacy.s2.item1": "To provide and operate the RSVP service.",
+  "pages.privacy.s2.item2": "To send account-related notifications (password reset, confirmations).",
+  "pages.privacy.s2.item3": "To improve service quality and analyze usage patterns.",
+  "pages.privacy.s2.item4": "To prevent abuse, fraud, and illegal activity.",
+  "pages.privacy.s3.title": "3. Storage & Security",
+  "pages.privacy.s3.body":
+    "Data is stored on Supabase infrastructure with at-rest and in-transit encryption. Access is restricted via Row Level Security (RLS), so only the account owner can read their invitation data.",
+  "pages.privacy.s4.title": "4. Sharing with Third Parties",
+  "pages.privacy.s4.body":
+    "We do not sell your data. It is only shared with the technical service providers we use (Supabase as database, plus analytics and error tracking if enabled) in the limited scope required to operate the service.",
+  "pages.privacy.s5.title": "5. Your Rights",
+  "pages.privacy.s5.item1": "Access and update your account data at any time.",
+  "pages.privacy.s5.item2": "Request deletion of your account along with all your invitations and guest data.",
+  "pages.privacy.s5.item3": "Opt out of non-essential email notifications.",
+  "pages.privacy.s6.title": "6. Cookies",
+  "pages.privacy.s6.body":
+    "We use minimal cookies (session, theme preference, language preference). We do not use third-party ads or cross-site trackers.",
+  "pages.privacy.s7.title": "7. Changes to This Policy",
+  "pages.privacy.s7.body":
+    "We may update this policy from time to time. Material changes will be announced by email or in-app notification.",
+  "pages.privacy.s8.title": "8. Contact",
+  "pages.privacy.s8.body":
+    "Questions or data deletion requests can be sent to the support email listed on our contact page.",
+
+  // Terms of Service
+  "pages.terms.title": "Terms of Service",
+  "pages.terms.intro":
+    "By creating an account and using Jakcation RSVPQuick (\"the service\"), you agree to be bound by these Terms of Service. Please read them carefully before using the service.",
+  "pages.terms.s1.title": "1. User Accounts",
+  "pages.terms.s1.item1": "You are responsible for keeping your account password confidential.",
+  "pages.terms.s1.item2": "You are responsible for all activity that happens under your account.",
+  "pages.terms.s1.item3": "You warrant that the account information you provide is accurate and does not violate applicable law.",
+  "pages.terms.s2.title": "2. User Content",
+  "pages.terms.s2.body":
+    "You retain ownership of the content (text, images, guest lists) you upload. By uploading, you grant us a limited license to store and display that content solely to operate the service.",
+  "pages.terms.s2.prohibited": "You may not use the service for content that:",
+  "pages.terms.s2.item1": "Infringes on copyright or other intellectual property rights.",
+  "pages.terms.s2.item2": "Contains hate speech, pornography, or illegal content.",
+  "pages.terms.s2.item3": "Promotes fraud, pyramid schemes, or illegal financial activity.",
+  "pages.terms.s2.item4": "Sends spam or phishing through invitations.",
+  "pages.terms.s3.title": "3. Prohibited Use",
+  "pages.terms.s3.item1": "Attempting unauthorized access to systems (hacking, mass scraping).",
+  "pages.terms.s3.item2": "Distributing malware through invitation links.",
+  "pages.terms.s3.item3": "Using the service to collect personal data without consent.",
+  "pages.terms.s4.title": "4. Payments & Plans",
+  "pages.terms.s4.body":
+    "Core features are free. If we introduce paid features in the future, specific terms will be announced before taking effect.",
+  "pages.terms.s5.title": "5. Service Availability",
+  "pages.terms.s5.body":
+    "We strive to keep the service available but do not guarantee zero downtime. We are not liable for indirect losses caused by unavailability.",
+  "pages.terms.s6.title": "6. Account Termination",
+  "pages.terms.s6.body":
+    "We reserve the right to suspend or delete accounts proven to violate these Terms, with or without prior notice.",
+  "pages.terms.s7.title": "7. Limitation of Liability",
+  "pages.terms.s7.body":
+    "The service is provided \"as is\". To the extent permitted by law, we are not liable for incidental, consequential, or data-loss damages arising from use of the service.",
+  "pages.terms.s8.title": "8. Governing Law",
+  "pages.terms.s8.body":
+    "These Terms are governed by the laws of the Republic of Indonesia. Disputes will be resolved first by good-faith discussion; failing that, in a competent court in Jakarta.",
+  "pages.terms.s9.title": "9. Changes",
+  "pages.terms.s9.body":
+    "We may update these Terms. Material changes will be announced via email or in-app notification.",
+  "pages.terms.s10.title": "10. Contact",
+  "pages.terms.s10.body":
+    "Questions can be sent to the support email listed on our contact page.",
+
+  // Captcha
+  "captcha.required": "Please complete the security check first.",
+  "captcha.failed": "Security check failed. Try again.",
+
+  // 404
+  "pages.error.heading": "Page not found",
+  "pages.error.body": "The link you opened may be mistyped or the invitation is no longer active.",
+  "pages.error.homeButton": "Back to Home",
 } as const;

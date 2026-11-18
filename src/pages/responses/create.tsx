@@ -6,6 +6,7 @@ import { IRequest, IResponse } from "../requests/list";
 import { useDocumentTitle } from "@refinedev/react-router-v6";
 import { IChoice, IQuestion } from "../../utility/types";
 import { CircularProgress } from "@mui/material";
+import Seo from "../../components/seo";
 
 export const ResponseCreate: React.FC = () => {
   const { id } = useParams();
@@ -49,6 +50,12 @@ export const ResponseCreate: React.FC = () => {
   });
   const choices = choicesQueryResult.data?.data;
 
+  const eventTitle = data?.data?.title;
+  const eventAddress = data?.data?.address;
+  const seoDescription = eventTitle
+    ? `Anda diundang${eventAddress ? ` ke ${eventAddress}` : ""}. Konfirmasi kehadiran Anda sekarang di ${eventTitle}.`
+    : "Konfirmasi kehadiran Anda pada undangan ini.";
+
   return data && id && responseTableQueryResult.data ? (
     <Background
       backgroundColor={data.data.background_color}
@@ -56,6 +63,12 @@ export const ResponseCreate: React.FC = () => {
       responseView
       background_gradient={data.data.background_gradient}
     >
+      <Seo
+        title={eventTitle ? `Undangan: ${eventTitle}` : "Undangan RSVP"}
+        description={seoDescription}
+        image={data.data.background_image || data.data.card_image || undefined}
+        type="article"
+      />
       <RequestCard
         backgroundColor={data.data.background_color}
         title={data.data.title}

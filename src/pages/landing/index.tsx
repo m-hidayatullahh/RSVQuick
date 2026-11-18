@@ -24,6 +24,7 @@ import { useGetIdentity, useTranslate } from "@refinedev/core";
 import { IUser } from "../../components/header";
 import { ColorModeContext } from "../../contexts/color-mode";
 import { getLocale, setLocale } from "../../i18n";
+import Seo from "../../components/seo";
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(24px); }
@@ -145,6 +146,11 @@ export default function LandingPage() {
       minHeight="100vh"
       sx={{ overflowX: "hidden" }}
     >
+      <Seo
+        title=""
+        description={t("pages.landing.hero.subtitle")}
+        canonical={(import.meta.env.VITE_SITE_URL || "https://rsvp.jakcation.id").replace(/\/$/, "") + "/"}
+      />
       <Box
         component="header"
         px={{ xs: 1.5, sm: 2 }}
@@ -478,9 +484,11 @@ export default function LandingPage() {
               zIndex: 1,
             }}
           >
+            {/* Desktop & tablet: full-width hero image overlapping sections */}
             <Box
               sx={{
-                marginTop: { xs: "-6%", sm: "-12%", md: "-20%" },
+                display: { xs: "none", sm: "block" },
+                marginTop: { sm: "-12%", md: "-20%" },
                 transform: `translate3d(0, ${scrollY * -0.08}px, 0)`,
                 willChange: "transform",
               }}
@@ -488,6 +496,7 @@ export default function LandingPage() {
               <Box
                 component="img"
                 src="/hero.png"
+                alt="Preview undangan RSVP Jakcation RSVPQuick"
                 sx={{
                   width: "100%",
                   display: "block",
@@ -673,21 +682,45 @@ export default function LandingPage() {
         </Box>
         </Box>
       </Box>
-      <Box component="footer" bgcolor="primary.main" p={4}>
+      <Box component="footer" bgcolor="primary.main" color="white" py={4} px={2}>
         <Box
           display="flex"
-          gap={4}
+          gap={{ xs: 2, md: 4 }}
           justifyContent="center"
           alignItems="center"
           flexWrap="wrap"
+          mb={2}
         >
-          {/* <Typography color="white" fontSize={20}>
-            Made with
-          </Typography> */}
-          {/* <img src="/refine-logo.svg" width={100} /> */}
-          {/* <img src="/supabase-logo.svg" width={150} /> */}
-          <img src="https://disparekraf.jakarta.go.id/jakartatourism-be/storage/jaktour/images/site-config/logo_dark/zYEVgsSVjHTy8QRV8QQGMNkcboTR3o4YmFgBmBrM.png" width={100} />
+          <img src="https://disparekraf.jakarta.go.id/jakartatourism-be/storage/jaktour/images/site-config/logo_dark/zYEVgsSVjHTy8QRV8QQGMNkcboTR3o4YmFgBmBrM.png" width={100} alt="Disparekraf Jakarta" />
         </Box>
+        <Box
+          display="flex"
+          gap={{ xs: 2, sm: 3 }}
+          justifyContent="center"
+          alignItems="center"
+          flexWrap="wrap"
+          sx={{
+            "& a": {
+              color: "white",
+              opacity: 0.85,
+              textDecoration: "none",
+              fontSize: "0.9rem",
+              transition: "opacity 0.2s ease",
+              "&:hover": { opacity: 1, textDecoration: "underline" },
+            },
+          }}
+        >
+          <Link to="/privacy">{t("pages.landing.footer.privacy")}</Link>
+          <Box sx={{ opacity: 0.5 }}>·</Box>
+          <Link to="/terms">{t("pages.landing.footer.terms")}</Link>
+        </Box>
+        <Typography
+          textAlign="center"
+          mt={2}
+          sx={{ color: "white", opacity: 0.7, fontSize: "0.8rem" }}
+        >
+          © {new Date().getFullYear()} Jakcation RSVPQuick. {t("pages.landing.footer.rights")}
+        </Typography>
       </Box>
 
       {/* Scroll-to-top floating button with scroll progress ring */}

@@ -9,7 +9,10 @@ import "@fontsource-variable/merienda";
 import "@fontsource/kaushan-script";
 
 import "./utility/dayjs";
+import { initSentry } from "./utility/sentry";
 import App from "./App";
+
+initSentry();
 
 const container = document.getElementById("root") as HTMLElement;
 const root = createRoot(container);

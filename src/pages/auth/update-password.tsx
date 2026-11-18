@@ -11,6 +11,7 @@ import { useUpdatePassword, useTranslate } from "@refinedev/core";
 import { AppIcon } from "../../components/app-icon";
 import PasswordField from "../../components/password-field";
 import AuthShell from "./auth-shell";
+import Seo from "../../components/seo";
 
 export default function UpdatePasswordPage() {
   const { mutate: updatePassword, isLoading } = useUpdatePassword<{
@@ -33,6 +34,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <AuthShell>
+      <Seo title="Ubah Password" description="Perbarui password akun RSVPQuick Anda." noindex />
       <Card sx={{ maxWidth: 420, width: "100%" }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" mb={3}>

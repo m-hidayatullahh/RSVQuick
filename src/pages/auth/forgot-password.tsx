@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -13,6 +13,8 @@ import { useForgotPassword, useTranslate } from "@refinedev/core";
 import { Link } from "react-router-dom";
 import { AppIcon } from "../../components/app-icon";
 import AuthShell from "./auth-shell";
+import Seo from "../../components/seo";
+import Captcha, { captchaEnabled, type CaptchaHandle } from "../../components/captcha";
 
 const COOLDOWN_SECONDS = 60;
 const COOLDOWN_KEY = "forgot-password-cooldown-until";
@@ -21,11 +23,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function ForgotPasswordPage() {
   const { mutate: forgotPassword, isLoading } = useForgotPassword<{
     email: string;
+    captchaToken?: string;
   }>();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaHandle>(null);
   const t = useTranslate();
 
   useEffect(() => {
@@ -57,6 +63,7 @@ export default function ForgotPasswordPage() {
     const trimmed = email.trim();
     setErrorMsg(null);
     setSubmitted(null);
+    setCaptchaError(null);
 
     if (!trimmed) {
       setErrorMsg(t("pages.forgotPassword.errors.requiredEmail"));
@@ -70,15 +77,20 @@ export default function ForgotPasswordPage() {
       setErrorMsg(t("pages.forgotPassword.errors.cooldown", { seconds: cooldownLeft }));
       return;
     }
+    if (captchaEnabled && !captchaToken) {
+      setCaptchaError(t("captcha.required"));
+      return;
+    }
 
     forgotPassword(
-      { email: trimmed },
+      { email: trimmed, captchaToken: captchaToken ?? undefined },
       {
         onSuccess: () => {
           setSubmitted(trimmed);
           const until = Date.now() + COOLDOWN_SECONDS * 1000;
           localStorage.setItem(COOLDOWN_KEY, String(until));
           setCooldownLeft(COOLDOWN_SECONDS);
+          captchaRef.current?.reset();
         },
         onError: (err: any) => {
           const msg =
@@ -87,6 +99,7 @@ export default function ForgotPasswordPage() {
             err?.name ??
             t("pages.forgotPassword.errors.genericFailure");
           setErrorMsg(msg);
+          captchaRef.current?.reset();
         },
       }
     );
@@ -94,6 +107,11 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell>
+      <Seo
+        title="Lupa Password"
+        description="Reset password akun RSVPQuick Anda dengan mudah."
+        noindex
+      />
       <Card sx={{ maxWidth: 420, width: "100%" }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" mb={3}>
@@ -135,6 +153,8 @@ export default function ForgotPasswordPage() {
                 autoComplete="email"
                 disabled={isLoading}
               />
+              <Captcha ref={captchaRef} onToken={setCaptchaToken} />
+              {captchaError && <Alert severity="warning">{captchaError}</Alert>}
               <Button
                 type="submit"
                 variant="contained"

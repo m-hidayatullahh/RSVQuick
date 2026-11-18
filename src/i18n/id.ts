@@ -176,4 +176,98 @@ export default {
   "pages.register.heading": "Buat akun RSVQuick",
   "pages.forgotPassword.heading": "Reset password RSVQuick",
   "pages.updatePassword.heading": "Ubah password RSVQuick",
+
+  // Legal — shared
+  "pages.legal.back": "Kembali",
+  "pages.legal.updated": "Terakhir diperbarui",
+  "pages.legal.updatedAt": "18 November 2026",
+
+  // Footer links
+  "pages.landing.footer.privacy": "Kebijakan Privasi",
+  "pages.landing.footer.terms": "Syarat & Ketentuan",
+  "pages.landing.footer.rights": "Semua hak dilindungi.",
+
+  // Privacy Policy
+  "pages.privacy.title": "Kebijakan Privasi",
+  "pages.privacy.intro":
+    "Kebijakan Privasi ini menjelaskan bagaimana Jakcation RSVPQuick (\"kami\") mengumpulkan, menggunakan, menyimpan, dan melindungi informasi yang Anda berikan saat menggunakan platform kami.",
+  "pages.privacy.s1.title": "1. Data yang Kami Kumpulkan",
+  "pages.privacy.s1.item1": "Data akun: email, password (dalam bentuk hash), dan preferensi profil.",
+  "pages.privacy.s1.item2": "Data undangan & tamu: informasi acara, daftar tamu, dan respons kehadiran yang Anda buat atau terima.",
+  "pages.privacy.s1.item3": "Data teknis: alamat IP, tipe browser, perangkat, dan log akses untuk keamanan dan analitik anonim.",
+  "pages.privacy.s2.title": "2. Cara Kami Menggunakan Data",
+  "pages.privacy.s2.item1": "Menyediakan dan mengoperasikan layanan RSVP.",
+  "pages.privacy.s2.item2": "Mengirim notifikasi terkait akun (reset password, konfirmasi).",
+  "pages.privacy.s2.item3": "Meningkatkan kualitas layanan dan menganalisis pola penggunaan.",
+  "pages.privacy.s2.item4": "Mencegah penyalahgunaan, kecurangan, dan aktivitas melanggar hukum.",
+  "pages.privacy.s3.title": "3. Penyimpanan & Keamanan",
+  "pages.privacy.s3.body":
+    "Data disimpan di infrastruktur Supabase dengan enkripsi at-rest dan in-transit. Akses dibatasi melalui Row Level Security (RLS) sehingga pemilik akun satu-satunya yang dapat membaca data undangannya.",
+  "pages.privacy.s4.title": "4. Pembagian Data kepada Pihak Ketiga",
+  "pages.privacy.s4.body":
+    "Kami tidak menjual data Anda. Data hanya dibagikan kepada penyedia layanan teknis yang kami gunakan (Supabase sebagai basis data, serta layanan analitik dan error tracking jika diaktifkan) dalam cakupan terbatas yang diperlukan.",
+  "pages.privacy.s5.title": "5. Hak Anda",
+  "pages.privacy.s5.item1": "Mengakses dan memperbarui data akun kapan saja.",
+  "pages.privacy.s5.item2": "Meminta penghapusan akun beserta seluruh undangan dan data tamu Anda.",
+  "pages.privacy.s5.item3": "Menonaktifkan notifikasi email non-esensial.",
+  "pages.privacy.s6.title": "6. Cookie",
+  "pages.privacy.s6.body":
+    "Kami menggunakan cookie minimum (session, preferensi tema, preferensi bahasa). Kami tidak menggunakan iklan pihak ketiga maupun tracker lintas situs.",
+  "pages.privacy.s7.title": "7. Perubahan Kebijakan",
+  "pages.privacy.s7.body":
+    "Kami dapat memperbarui kebijakan ini sewaktu-waktu. Perubahan material akan kami informasikan melalui email atau notifikasi dalam aplikasi.",
+  "pages.privacy.s8.title": "8. Kontak",
+  "pages.privacy.s8.body":
+    "Pertanyaan atau permintaan penghapusan data dapat dikirim ke email dukungan yang tercantum di halaman kontak kami.",
+
+  // Terms of Service
+  "pages.terms.title": "Syarat & Ketentuan",
+  "pages.terms.intro":
+    "Dengan membuat akun dan menggunakan Jakcation RSVPQuick (\"layanan\"), Anda setuju terikat pada Syarat & Ketentuan berikut. Harap baca dengan saksama sebelum menggunakan layanan.",
+  "pages.terms.s1.title": "1. Akun Pengguna",
+  "pages.terms.s1.item1": "Anda bertanggung jawab atas kerahasiaan password akun Anda.",
+  "pages.terms.s1.item2": "Anda bertanggung jawab atas seluruh aktivitas yang terjadi di akun Anda.",
+  "pages.terms.s1.item3": "Anda menjamin informasi akun yang diberikan akurat dan tidak melanggar hukum.",
+  "pages.terms.s2.title": "2. Konten Pengguna",
+  "pages.terms.s2.body":
+    "Anda tetap pemilik konten (teks, gambar, daftar tamu) yang Anda unggah. Dengan mengunggah, Anda memberi kami lisensi terbatas untuk menyimpan dan menampilkan konten tersebut semata-mata untuk mengoperasikan layanan.",
+  "pages.terms.s2.prohibited": "Anda dilarang menggunakan layanan untuk konten yang:",
+  "pages.terms.s2.item1": "Melanggar hak cipta atau kekayaan intelektual pihak lain.",
+  "pages.terms.s2.item2": "Mengandung ujaran kebencian, pornografi, atau konten ilegal.",
+  "pages.terms.s2.item3": "Mempromosikan penipuan, skema piramida, atau aktivitas finansial ilegal.",
+  "pages.terms.s2.item4": "Mengirim spam atau phishing melalui undangan.",
+  "pages.terms.s3.title": "3. Penggunaan yang Dilarang",
+  "pages.terms.s3.item1": "Mencoba mengakses sistem secara tidak sah (hacking, scraping massal).",
+  "pages.terms.s3.item2": "Mendistribusikan malware melalui tautan undangan.",
+  "pages.terms.s3.item3": "Menggunakan layanan untuk mengumpulkan data pribadi tanpa izin.",
+  "pages.terms.s4.title": "4. Pembayaran & Paket",
+  "pages.terms.s4.body":
+    "Fitur dasar tersedia gratis. Jika di masa depan kami menambahkan fitur berbayar, syarat spesifik akan diumumkan sebelum diberlakukan.",
+  "pages.terms.s5.title": "5. Ketersediaan Layanan",
+  "pages.terms.s5.body":
+    "Kami berusaha menjaga layanan tetap tersedia, namun tidak menjamin bebas downtime. Kami tidak bertanggung jawab atas kerugian tidak langsung yang timbul akibat ketidaktersediaan layanan.",
+  "pages.terms.s6.title": "6. Penghentian Akun",
+  "pages.terms.s6.body":
+    "Kami berhak menangguhkan atau menghapus akun yang terbukti melanggar Syarat & Ketentuan ini, dengan atau tanpa pemberitahuan sebelumnya.",
+  "pages.terms.s7.title": "7. Batasan Tanggung Jawab",
+  "pages.terms.s7.body":
+    "Layanan disediakan \"apa adanya\". Sejauh diizinkan oleh hukum, kami tidak bertanggung jawab atas kerugian insidental, konsekuensial, atau hilangnya data yang timbul dari penggunaan layanan.",
+  "pages.terms.s8.title": "8. Hukum yang Berlaku",
+  "pages.terms.s8.body":
+    "Syarat & Ketentuan ini tunduk pada hukum Republik Indonesia. Sengketa akan diselesaikan melalui musyawarah; jika tidak tercapai, melalui pengadilan yang berwenang di Jakarta.",
+  "pages.terms.s9.title": "9. Perubahan",
+  "pages.terms.s9.body":
+    "Kami dapat memperbarui Syarat & Ketentuan ini. Perubahan material akan diinformasikan melalui email atau notifikasi dalam aplikasi.",
+  "pages.terms.s10.title": "10. Kontak",
+  "pages.terms.s10.body":
+    "Pertanyaan dapat dikirim ke email dukungan yang tercantum di halaman kontak kami.",
+
+  // Captcha
+  "captcha.required": "Mohon selesaikan verifikasi keamanan terlebih dahulu.",
+  "captcha.failed": "Verifikasi keamanan gagal. Coba lagi.",
+
+  // 404
+  "pages.error.heading": "Halaman tidak ditemukan",
+  "pages.error.body": "Tautan yang Anda buka mungkin salah ketik atau undangan sudah tidak aktif.",
+  "pages.error.homeButton": "Kembali ke Beranda",
 } as const;

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
+  Alert,
   Button,
   Card,
   CardContent,
@@ -13,23 +14,43 @@ import { Link } from "react-router-dom";
 import { AppIcon } from "../../components/app-icon";
 import PasswordField from "../../components/password-field";
 import AuthShell from "./auth-shell";
+import Seo from "../../components/seo";
+import Captcha, { captchaEnabled, type CaptchaHandle } from "../../components/captcha";
 
 export default function RegisterPage() {
   const { mutate: register, isLoading } = useRegister<{
     email: string;
     password: string;
+    captchaToken?: string;
   }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaHandle>(null);
   const t = useTranslate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    register({ email: email.trim(), password });
+    if (captchaEnabled && !captchaToken) {
+      setCaptchaError(t("captcha.required"));
+      return;
+    }
+    setCaptchaError(null);
+    register(
+      { email: email.trim(), password, captchaToken: captchaToken ?? undefined },
+      {
+        onError: () => captchaRef.current?.reset(),
+      },
+    );
   };
 
   return (
     <AuthShell>
+      <Seo
+        title="Daftar Akun"
+        description="Buat akun RSVPQuick gratis untuk mulai mengelola undangan RSVP Anda secara online."
+      />
       <Card sx={{ maxWidth: 420, width: "100%" }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" mb={3}>
@@ -59,6 +80,8 @@ export default function RegisterPage() {
                 helperText={t("pages.register.passwordHelp")}
                 autoComplete="new-password"
               />
+              <Captcha ref={captchaRef} onToken={setCaptchaToken} />
+              {captchaError && <Alert severity="warning">{captchaError}</Alert>}
               <Button
                 type="submit"
                 variant="contained"
