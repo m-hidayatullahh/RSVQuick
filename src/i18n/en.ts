@@ -155,6 +155,22 @@ export default {
   "pages.landing.features.qr.title": "Invite via QR Code",
   "pages.landing.features.qr.desc": "Share invites via a handy QR code. Copy it as an image and send.",
 
+  // FAQ
+  "pages.landing.faq.title": "Frequently Asked Questions",
+  "pages.landing.faq.subtitle": "Still unsure? Check the answers below before you start.",
+  "pages.landing.faq.q1.q": "What is RSVQuick?",
+  "pages.landing.faq.q1.a": "RSVQuick is a platform to create, share, and manage event RSVPs online — no more counting physical cards by hand.",
+  "pages.landing.faq.q2.q": "Is RSVQuick free?",
+  "pages.landing.faq.q2.a": "Yes, the core features are free to use. You can start building invitations right after signing up at no cost.",
+  "pages.landing.faq.q3.q": "How do guests confirm attendance?",
+  "pages.landing.faq.q3.a": "Guests open the invite link or scan the QR code, then choose 'Attending' or 'Not attending'. All responses are recorded in realtime.",
+  "pages.landing.faq.q4.q": "Is there a limit on the number of guests?",
+  "pages.landing.faq.q4.a": "There is no hard cap, but you can set a maximum capacity per invitation so attendance stays under control. The system automatically closes confirmations once the quota is full.",
+  "pages.landing.faq.q5.q": "Is my guest data safe?",
+  "pages.landing.faq.q5.a": "All data is stored in an encrypted database accessible only to the account owner. Validation runs on the server, so it cannot be tampered with on the client side.",
+  "pages.landing.faq.q6.q": "Can I customize the invitation design?",
+  "pages.landing.faq.q6.a": "Yes. You can tweak colors, fonts, background images, welcome text, and even add custom survey questions for your guests.",
+
   // Auth pages — extra headings
   "pages.login.heading": "Sign in to RSVQuick",
   "pages.register.heading": "Create your RSVQuick account",

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /requests
+Disallow: /responses
+Disallow: /admin-users
+Disallow: /profiles
+Disallow: /questions
+Disallow: /choices
+Disallow: /answers
+
+Sitemap: https://rsvquick.com/sitemap.xml

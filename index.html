@@ -1,36 +1,169 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/rsvquick-icon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="shortcut icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="RSVQuick | Quickly create invitations." />
+    <meta name="theme-color" content="#e91e63" />
+    <meta name="application-name" content="Jakcation RSVPQuick" />
+
+    <!-- Primary SEO -->
+    <title>Jakcation RSVPQuick | Buat & Kelola Undangan RSVP Online dengan Cepat</title>
     <meta
-      data-rh="true"
-      property="og:image"
-      content="https://refine.dev/img/refine_social_new.png"
+      name="description"
+      content="Jakcation RSVPQuick adalah platform untuk membuat, menyebar, dan mengelola undangan RSVP acara secara online. Kustomisasi kartu, bagikan lewat QR Code, dan pantau kehadiran tamu secara realtime."
     />
     <meta
-      data-rh="true"
-      name="twitter:image"
-      content="https://refine.dev/img/refine_social_new.png"
+      name="keywords"
+      content="Jakcation RSVPQuick, RSVPQuick, Jakcation, RSVP online, undangan digital, undangan online, RSVP acara, kartu undangan, QR code undangan, manajemen tamu, invitation builder"
     />
-    <title>RSVQuick | Buat invitations.</title>
+    <meta name="author" content="Jakcation RSVPQuick" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://rsvquick.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Jakcation RSVPQuick" />
+    <meta property="og:url" content="https://rsvquick.com/" />
+    <meta property="og:title" content="Jakcation RSVPQuick | Buat & Kelola Undangan RSVP Online dengan Cepat" />
+    <meta
+      property="og:description"
+      content="Buat kartu RSVP yang bisa dikustomisasi, bagikan lewat tautan atau QR Code, dan pantau kehadiran tamu secara realtime — semua gratis di Jakcation RSVPQuick."
+    />
+    <meta property="og:image" content="https://rsvquick.com/logo.png" />
+    <meta property="og:image:alt" content="Jakcation RSVPQuick logo" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Jakcation RSVPQuick | Buat & Kelola Undangan RSVP Online" />
+    <meta
+      name="twitter:description"
+      content="Buat kartu RSVP yang bisa dikustomisasi, bagikan lewat QR Code, dan pantau kehadiran tamu secara realtime."
+    />
+    <meta name="twitter:image" content="https://rsvquick.com/logo.png" />
+    <meta name="twitter:image:alt" content="Jakcation RSVPQuick logo" />
+
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Jakcation RSVPQuick",
+        "alternateName": ["RSVPQuick", "Jakcation"],
+        "url": "https://rsvquick.com/",
+        "logo": "https://rsvquick.com/logo.png",
+        "image": "https://rsvquick.com/logo.png",
+        "description": "Platform untuk membuat, menyebar, dan mengelola undangan RSVP acara secara online dengan kustomisasi, QR Code, dan pantauan kehadiran realtime.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "inLanguage": ["id", "en"],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "IDR"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --loader-bg: #ffffff;
+        --loader-ring: #e91e63;
+      }
+      html[data-color-mode="dark"] {
+        --loader-bg: #121212;
+      }
+      html[data-color-mode="dark"] .rsvq-loader-logo-light { display: block; }
+      html[data-color-mode="dark"] .rsvq-loader-logo-dark { display: none; }
+      html[data-color-mode="light"] .rsvq-loader-logo-light { display: none; }
+      html[data-color-mode="light"] .rsvq-loader-logo-dark { display: block; }
+
+      .rsvq-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--loader-bg);
+        z-index: 9999;
+      }
+      .rsvq-loader-inner {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .rsvq-loader-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        margin: -50px 0 0 -50px;
+        border-radius: 50%;
+        border: 2px solid var(--loader-ring);
+        opacity: 0;
+        animation: rsvq-ripple 2.4s cubic-bezier(0.19, 1, 0.22, 1) infinite;
+      }
+      .rsvq-loader-ring:nth-child(2) { animation-delay: 0.6s; }
+      .rsvq-loader-ring:nth-child(3) { animation-delay: 1.2s; }
+      .rsvq-loader-logo {
+        max-width: 110px;
+        max-height: 110px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        position: relative;
+        z-index: 1;
+        animation: rsvq-pulse 2.4s ease-in-out infinite;
+      }
+      @keyframes rsvq-ripple {
+        0% {
+          transform: scale(0.6);
+          opacity: 0.8;
+          border-width: 3px;
+        }
+        100% {
+          transform: scale(2.2);
+          opacity: 0;
+          border-width: 1px;
+        }
+      }
+      @keyframes rsvq-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+    </style>
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem("colorMode") || "light";
+          document.documentElement.setAttribute("data-color-mode", mode);
+        } catch (e) {
+          document.documentElement.setAttribute("data-color-mode", "light");
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <div class="rsvq-loader" role="status" aria-label="Memuat...">
+        <div class="rsvq-loader-inner">
+          <span class="rsvq-loader-ring"></span>
+          <span class="rsvq-loader-ring"></span>
+          <span class="rsvq-loader-ring"></span>
+          <img class="rsvq-loader-logo rsvq-loader-logo-dark" src="/logo.png" alt="RSVQuick" />
+          <img class="rsvq-loader-logo rsvq-loader-logo-light" src="/logo-white.png" alt="RSVQuick" />
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/index.tsx"></script>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm dev` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
   </body>
 </html>

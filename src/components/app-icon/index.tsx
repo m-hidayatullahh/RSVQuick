@@ -17,18 +17,12 @@ export const AppIcon: React.FC<{ collapsed?: boolean; size?: number }> = ({
       component={Link}
       to="/"
       sx={{
-        // Dark mode: beri background terang di belakang logo supaya tetap kontras
-        // tanpa mengubah warna asli logo.
-        bgcolor: isDark ? "#fff" : "transparent",
-        px: isDark ? 1 : 0,
-        py: isDark ? 0.5 : 0,
-        borderRadius: isDark ? 1 : 0,
         display: "inline-flex",
       }}
     >
       <Box
         component="img"
-        src="/logo.png"
+        src={isDark ? "/logo-white.png" : "/logo.png"}
         sx={{
           display: "block",
           width: collapsed

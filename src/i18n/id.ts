@@ -155,6 +155,22 @@ export default {
   "pages.landing.features.qr.title": "Undangan Melalui QR Code",
   "pages.landing.features.qr.desc": "Sebarkan undangan Anda lewat QR Code yang praktis. Salin sebagai gambar lalu kirim.",
 
+  // FAQ
+  "pages.landing.faq.title": "Pertanyaan yang Sering Ditanyakan",
+  "pages.landing.faq.subtitle": "Belum yakin? Cek jawaban di bawah sebelum mulai.",
+  "pages.landing.faq.q1.q": "Apa itu RSVQuick?",
+  "pages.landing.faq.q1.a": "RSVQuick adalah platform untuk membuat, menyebar, dan mengelola RSVP acara secara online — tidak perlu lagi menghitung tamu manual lewat kartu fisik.",
+  "pages.landing.faq.q2.q": "Apakah RSVQuick gratis?",
+  "pages.landing.faq.q2.a": "Ya, fitur dasar bisa digunakan gratis. Anda bisa langsung membuat undangan tanpa biaya setelah mendaftar.",
+  "pages.landing.faq.q3.q": "Bagaimana cara tamu mengonfirmasi kehadiran?",
+  "pages.landing.faq.q3.a": "Tamu cukup membuka tautan undangan atau memindai QR Code, lalu memilih 'Hadir' atau 'Tidak Hadir'. Semua respon langsung tercatat secara realtime.",
+  "pages.landing.faq.q4.q": "Apakah ada batas jumlah tamu?",
+  "pages.landing.faq.q4.a": "Tidak ada batas kaku, namun Anda bisa menetapkan kuota maksimum per undangan supaya kapasitas acara terkontrol. Sistem otomatis menutup konfirmasi saat kuota penuh.",
+  "pages.landing.faq.q5.q": "Apakah data tamu saya aman?",
+  "pages.landing.faq.q5.a": "Semua data disimpan di database terenkripsi dan hanya bisa diakses oleh pemilik akun. Validasi dilakukan di server, sehingga tidak bisa dimanipulasi dari sisi klien.",
+  "pages.landing.faq.q6.q": "Bisakah saya mengkustomisasi tampilan undangan?",
+  "pages.landing.faq.q6.a": "Bisa. Anda dapat mengatur warna, font, gambar latar, teks sambutan, hingga menambahkan pertanyaan tambahan (survei) untuk tamu Anda.",
+
   // Auth pages — extra headings
   "pages.login.heading": "Masuk ke RSVQuick",
   "pages.register.heading": "Buat akun RSVQuick",
