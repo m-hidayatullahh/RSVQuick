@@ -11,8 +11,11 @@ git pull --ff-only
 echo "==> docker compose down"
 docker compose down
 
-echo "==> docker compose up -d --build"
-docker compose up -d --build
+echo "==> docker compose build --no-cache"
+docker compose build --no-cache
+
+echo "==> docker compose up -d"
+docker compose up -d
 
 echo "==> done"
 docker compose ps
