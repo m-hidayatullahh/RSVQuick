@@ -41,7 +41,7 @@ export default function LoginPage() {
     login(
       { email: email.trim(), password, captchaToken: captchaToken ?? undefined },
       {
-        onError: () => captchaRef.current?.reset(),
+        onSettled: () => captchaRef.current?.reset(),
       },
     );
   };

@@ -40,7 +40,7 @@ export default function RegisterPage() {
     register(
       { email: email.trim(), password, captchaToken: captchaToken ?? undefined },
       {
-        onError: () => captchaRef.current?.reset(),
+        onSettled: () => captchaRef.current?.reset(),
       },
     );
   };

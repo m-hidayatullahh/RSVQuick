@@ -90,7 +90,6 @@ export default function ForgotPasswordPage() {
           const until = Date.now() + COOLDOWN_SECONDS * 1000;
           localStorage.setItem(COOLDOWN_KEY, String(until));
           setCooldownLeft(COOLDOWN_SECONDS);
-          captchaRef.current?.reset();
         },
         onError: (err: any) => {
           const msg =
@@ -99,8 +98,8 @@ export default function ForgotPasswordPage() {
             err?.name ??
             t("pages.forgotPassword.errors.genericFailure");
           setErrorMsg(msg);
-          captchaRef.current?.reset();
         },
+        onSettled: () => captchaRef.current?.reset(),
       }
     );
   };
