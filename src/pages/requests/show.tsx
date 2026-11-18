@@ -26,7 +26,7 @@ import Background from "../../components/request-card/background";
 import { RequestCard } from "../../components/request-card";
 import Box from "@mui/material/Box";
 import ValueDisplay from "../../components/common/valueDisplay";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { IRequest, IResponse } from "./list";
 import html2canvas from "html2canvas";
@@ -184,6 +184,30 @@ export const RequestShow: React.FC<IResourceComponentsProps> = () => {
     },
   });
   const answers = answerQueryResult.data?.data;
+
+  useEffect(() => {
+    if (!request?.id) return;
+    const requestId = request.id;
+    const channel = (supabaseClient as any)
+      .channel(`show-responses:${requestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "responses",
+          filter: `request_id=eq.${requestId}`,
+        },
+        () => {
+          responseTableQueryResult.refetch();
+          answerQueryResult.refetch();
+        }
+      )
+      .subscribe();
+    return () => {
+      (supabaseClient as any).removeChannel(channel);
+    };
+  }, [request?.id]);
 
   const confirmedAttendeeResponses: IResponse[] = useMemo(
     () => responseDataGridProps.rows.filter((res) => res.accept),

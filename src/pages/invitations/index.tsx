@@ -50,7 +50,7 @@ import {
 import { List } from "@refinedev/mui";
 import { Link, useParams } from "react-router-dom";
 import { IInvitation } from "../../utility/types";
-import { IRequest } from "../requests/list";
+import { IRequest, IResponse } from "../requests/list";
 import { supabaseClient } from "../../utility";
 
 const APP_URL = window.location.origin;
@@ -188,6 +188,60 @@ export default function InvitationListPage() {
       (supabaseClient as any).removeChannel(channel);
     };
   }, [requestId]);
+
+  // --- RSVP responses (for status per guest) ---
+  const [responses, setResponses] = useState<IResponse[]>([]);
+
+  const fetchAllResponses = async () => {
+    if (!requestId) return;
+    const CHUNK = 1000;
+    let all: IResponse[] = [];
+    let from = 0;
+    while (true) {
+      const { data: chunk, error } = await (supabaseClient as any)
+        .from("responses")
+        .select("*")
+        .eq("request_id", requestId)
+        .range(from, from + CHUNK - 1);
+      if (error) break;
+      if (!chunk || chunk.length === 0) break;
+      all = all.concat(chunk);
+      if (chunk.length < CHUNK) break;
+      from += CHUNK;
+    }
+    setResponses(all);
+  };
+
+  useEffect(() => {
+    fetchAllResponses();
+  }, [requestId]);
+
+  useEffect(() => {
+    if (!requestId) return;
+    const channel = (supabaseClient as any)
+      .channel(`responses:${requestId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "responses", filter: `request_id=eq.${requestId}` },
+        () => {
+          fetchAllResponses();
+        }
+      )
+      .subscribe();
+    return () => {
+      (supabaseClient as any).removeChannel(channel);
+    };
+  }, [requestId]);
+
+  const responsesByName = useMemo(() => {
+    const map: Record<string, { accept: boolean }> = {};
+    responses.forEach((r) => {
+      const key = (r.responder_name ?? "").trim().toLowerCase();
+      if (!key) return;
+      map[key] = { accept: !!r.accept };
+    });
+    return map;
+  }, [responses]);
 
   const { mutate: deleteInvitation } = useDelete();
 
@@ -731,7 +785,15 @@ export default function InvitationListPage() {
   // --- Search + status filter ---
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "email_sent" | "email_unsent" | "no_email" | "has_wa" | "no_wa"
+    | "all"
+    | "email_sent"
+    | "email_unsent"
+    | "no_email"
+    | "has_wa"
+    | "no_wa"
+    | "rsvp_hadir"
+    | "rsvp_tidak"
+    | "rsvp_belum"
   >("all");
 
   const filteredInvitations = useMemo(() => {
@@ -745,6 +807,7 @@ export default function InvitationListPage() {
         if (!name.includes(q) && !email.includes(q) && !jabatan.includes(q)) return false;
       }
       // status filter
+      const rsvp = responsesByName[(inv.name ?? "").trim().toLowerCase()];
       switch (statusFilter) {
         case "email_sent":
           return !!inv.sent_email_at;
@@ -756,11 +819,17 @@ export default function InvitationListPage() {
           return !!inv.wa_number;
         case "no_wa":
           return !inv.wa_number;
+        case "rsvp_hadir":
+          return !!rsvp?.accept;
+        case "rsvp_tidak":
+          return !!rsvp && !rsvp.accept;
+        case "rsvp_belum":
+          return !rsvp;
         default:
           return true;
       }
     });
-  }, [invitations, search, statusFilter]);
+  }, [invitations, search, statusFilter, responsesByName]);
 
   // --- Columns ---
   const columns = useMemo<GridColDef[]>(
@@ -769,6 +838,26 @@ export default function InvitationListPage() {
       { field: "jabatan", headerName: "Jabatan", flex: 1, minWidth: 130 },
       { field: "email", headerName: "Email", flex: 1, minWidth: 180 },
       { field: "wa_number", headerName: "No. WA", minWidth: 130 },
+      {
+        field: "rsvp_status",
+        headerName: "Status RSVP",
+        minWidth: 150,
+        sortable: false,
+        valueGetter: (params: any) => {
+          const name = (params.row?.name ?? "").trim().toLowerCase();
+          const r = responsesByName[name];
+          if (!r) return "belum";
+          return r.accept ? "hadir" : "tidak";
+        },
+        renderCell: ({ value }) =>
+          value === "hadir" ? (
+            <Chip label="Hadir" size="small" color="success" />
+          ) : value === "tidak" ? (
+            <Chip label="Tidak Hadir" size="small" color="error" />
+          ) : (
+            <Chip label="Belum Respon" size="small" variant="outlined" />
+          ),
+      },
       {
         field: "sent_email_at",
         headerName: "Email Terkirim",
@@ -860,7 +949,7 @@ export default function InvitationListPage() {
         },
       },
     ],
-    [request, requestId, refetch, sendingEmailIds]
+    [request, requestId, refetch, sendingEmailIds, responsesByName]
   );
 
   const unsent = invitations.filter((i) => i.email && !i.sent_email_at).length;
@@ -1141,6 +1230,9 @@ export default function InvitationListPage() {
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
             <MenuItem value="all">Semua tamu</MenuItem>
+            <MenuItem value="rsvp_hadir">RSVP: Hadir</MenuItem>
+            <MenuItem value="rsvp_tidak">RSVP: Tidak Hadir</MenuItem>
+            <MenuItem value="rsvp_belum">RSVP: Belum Respon</MenuItem>
             <MenuItem value="email_sent">Email: Sudah dikirim</MenuItem>
             <MenuItem value="email_unsent">Email: Belum dikirim</MenuItem>
             <MenuItem value="no_email">Tanpa email</MenuItem>

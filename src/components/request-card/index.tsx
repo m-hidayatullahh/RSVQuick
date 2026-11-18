@@ -9,7 +9,7 @@ import Paper from "@mui/material/Paper";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
-import { useCreate, useCreateMany, useNotification } from "@refinedev/core";
+import { useNotification } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
 import React, { useMemo } from "react";
 import tc from "tinycolor2";
@@ -20,8 +20,8 @@ import { useForm } from "@refinedev/react-hook-form";
 import { FieldValues } from "react-hook-form";
 import { IResponse } from "../../pages/requests/list";
 import { IAnswer, IChoice, IQuestion } from "../../utility/types";
-import { v4 as uuidv4 } from "uuid";
 import CardImageOverlay, { CardImagePosition } from "./card-image-overlay";
+import { supabaseClient } from "../../utility";
 
 interface Survey {
   question: IQuestion;
@@ -93,7 +93,6 @@ export const RequestCard: React.FC<RequestCardProps> = ({
   onCardImageChange,
 }) => {
   const {
-    refineCore: { onFinish },
     register,
     setValue,
     watch,
@@ -103,12 +102,9 @@ export const RequestCard: React.FC<RequestCardProps> = ({
 
   const {
     register: surveyRegister,
-    handleSubmit: handleSurveySubmit,
     getValues: getSurveyValues,
   } = useForm<SurveyAnswer[]>();
 
-  const { mutate } = useCreate<IResponse>();
-  const { mutate: createAnswers } = useCreateMany<IAnswer>();
   const navigate = useNavigate();
   const { open } = useNotification();
 
@@ -127,12 +123,11 @@ export const RequestCard: React.FC<RequestCardProps> = ({
   const onSubmit = async (data: FieldValues) => {
     if (!requestId) return;
 
-    const surveyAnswers = getSurveyValues()?.answers as IAnswer[];
+    const surveyAnswers = (getSurveyValues()?.answers as IAnswer[] | undefined) ?? [];
     if (
       surveys &&
-      surveyAnswers &&
-      surveyAnswers.filter((a) => a.choice_id).length !== surveys.length &&
-      accept
+      accept &&
+      surveyAnswers.filter((a) => a.choice_id).length !== surveys.length
     ) {
       open?.({
         type: "error",
@@ -143,29 +138,66 @@ export const RequestCard: React.FC<RequestCardProps> = ({
       return;
     }
 
-    const responseId = uuidv4();
-    mutate(
-      {
-        resource: "responses",
-        values: { ...data, id: responseId, request_id: requestId },
-      },
-      {
-        onSuccess: () => {
-          if (accept) {
-            handleSurveySubmit(async (values) => {
-              const answers = values.answers as SurveyAnswer[];
-              createAnswers({
-                resource: "answers",
-                errorNotification: false,
-                successNotification: false,
-                values: answers.map((a) => ({ ...a, response_id: responseId })),
-              });
-            })();
-          }
-          navigate("/thank-you");
+    const payloadAnswers = accept
+      ? surveyAnswers
+          .filter((a) => a?.question_id && a?.choice_id)
+          .map((a) => ({
+            question_id: Number(a.question_id),
+            choice_id: Number(a.choice_id),
+          }))
+      : [];
+
+    const { error } = await (supabaseClient as any).rpc("submit_response", {
+      p_request_id: requestId,
+      p_responder_name: data.responder_name,
+      p_accept: accept,
+      p_answers: payloadAnswers,
+    });
+
+    if (error) {
+      const code = (error.message ?? "").trim();
+      const map: Record<string, { message: string; description: string }> = {
+        name_required: { message: "Nama harus diisi", description: "" },
+        request_not_found: {
+          message: "Undangan tidak ditemukan",
+          description: "",
         },
-      }
-    );
+        deadline_passed: {
+          message: "Konfirmasi sudah ditutup",
+          description: `Batas konfirmasi (${dayjs(closeDate).format(
+            "Do MMMM YYYY"
+          )}) telah lewat.`,
+        },
+        capacity_full: {
+          message: "Kuota Penuh",
+          description: "Maaf, kuota tamu yang hadir sudah penuh.",
+        },
+        duplicate_name: {
+          message: "Nama sudah terdaftar",
+          description:
+            "Nama ini sudah mengirim konfirmasi. Gunakan nama lain.",
+        },
+        not_invited: {
+          message: "Nama tidak terdaftar",
+          description:
+            "Nama Anda tidak ada di daftar tamu undangan. Pastikan sesuai dengan nama pada undangan yang diterima.",
+        },
+        rate_limited: {
+          message: "Terlalu banyak permintaan",
+          description:
+            "Silakan tunggu beberapa saat sebelum mencoba lagi.",
+        },
+      };
+      const mapped = map[code] ?? {
+        message: "Gagal menyimpan konfirmasi",
+        description: code || "Terjadi kesalahan tidak diketahui.",
+      };
+      if (code === "deadline_passed") setEventClosed(true);
+      open?.({ type: "error", key: code || "submit-err", ...mapped });
+      return;
+    }
+
+    navigate("/thank-you");
   };
 
   const theme = createTheme({
@@ -187,10 +219,28 @@ export const RequestCard: React.FC<RequestCardProps> = ({
     [responses]
   );
 
-  const eventClosed = useMemo(
-    () => dayjs().isAfter(dayjs(closeDate)),
-    [closeDate]
+  const [eventClosed, setEventClosed] = React.useState(() =>
+    dayjs().isAfter(dayjs(closeDate))
   );
+  React.useEffect(() => {
+    setEventClosed(dayjs().isAfter(dayjs(closeDate)));
+    if (eventClosed) return;
+    const tick = () => {
+      if (dayjs().isAfter(dayjs(closeDate))) {
+        setEventClosed(true);
+      }
+    };
+    const interval = setInterval(tick, 30_000);
+    const diff = dayjs(closeDate).diff(dayjs());
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    if (diff > 0 && diff < 2_147_483_647) {
+      timeout = setTimeout(() => setEventClosed(true), diff + 500);
+    }
+    return () => {
+      clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [closeDate, eventClosed]);
   const capacityFull = useMemo(
     () => confirmedAttendees >= limit,
     [confirmedAttendees, limit]
@@ -307,50 +357,58 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           px={{ xs: 2, sm: 4 }}
           pb={{ xs: 2, sm: 4 }}
         >
-          <Box display="flex" flexDirection="column" alignItems="center">
-            <Box my={2}>
-              <TextField
-                {...register("responder_name", {
-                  required: "Nama harus diisi",
-                })}
-                error={!!(errors as any)?.responder_name}
-                helperText={(errors as any)?.responder_name?.message}
-                InputLabelProps={{ shrink: true }}
-                type="text"
-                label="Nama Anda"
-                name="responder_name"
-                variant="standard"
-              />
-            </Box>
-            <FormControl error={!!(errors as any)?.accept}>
-              <FormLabel
-                sx={{ textAlign: "center", color: primaryColor }}
-              >
-                {displayQuestionLabel}
-              </FormLabel>
-              <RadioGroup name="radio-buttons-group">
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  gap={{ xs: 2, sm: 4 }}
-                  flexWrap="wrap"
+          {!(eventClosed || capacityFull) && (
+            <Box display="flex" flexDirection="column" alignItems="center">
+              <Box my={2}>
+                <TextField
+                  {...register("responder_name", {
+                    required: "Nama harus diisi",
+                  })}
+                  error={!!(errors as any)?.responder_name}
+                  helperText={
+                    (errors as any)?.responder_name?.message ||
+                    (prefillName
+                      ? "Nama sesuai undangan (terkunci)"
+                      : "Masukkan nama persis seperti pada undangan Anda")
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  type="text"
+                  label="Nama Anda"
+                  name="responder_name"
+                  variant="standard"
+                  InputProps={{ readOnly: !!prefillName }}
+                />
+              </Box>
+              <FormControl error={!!(errors as any)?.accept}>
+                <FormLabel
+                  sx={{ textAlign: "center", color: primaryColor }}
                 >
-                  <FormControlLabel
-                    value="false"
-                    control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
-                    label={rejectionLabel}
-                  />
-                  <FormControlLabel
-                    value="true"
-                    control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
-                    label={acceptanceLabel}
-                  />
-                </Box>
-              </RadioGroup>
-            </FormControl>
-          </Box>
+                  {displayQuestionLabel}
+                </FormLabel>
+                <RadioGroup name="radio-buttons-group">
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    gap={{ xs: 2, sm: 4 }}
+                    flexWrap="wrap"
+                  >
+                    <FormControlLabel
+                      value="false"
+                      control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
+                      label={rejectionLabel}
+                    />
+                    <FormControlLabel
+                      value="true"
+                      control={<Radio {...register("accept", { required: "Harus dipilih" })} />}
+                      label={acceptanceLabel}
+                    />
+                  </Box>
+                </RadioGroup>
+              </FormControl>
+            </Box>
+          )}
 
-          {surveys && accept && surveys.length > 0 && (
+          {!(eventClosed || capacityFull) && surveys && accept && surveys.length > 0 && (
             <>
               <Divider sx={{ my: 4 }} />
               <Stack gap={2}>
@@ -408,9 +466,17 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           )}
 
           <Box mt={4} textAlign="center">
-            <Button variant="contained" type="submit" disabled={submitDisabled}>
-              Kirim Konfirmasi
-            </Button>
+            {eventClosed || capacityFull ? (
+              <Typography color={primaryColor} fontWeight="bold">
+                {eventClosed
+                  ? "Konfirmasi sudah ditutup."
+                  : "Kuota tamu sudah penuh."}
+              </Typography>
+            ) : (
+              <Button variant="contained" type="submit" disabled={submitDisabled}>
+                Kirim Konfirmasi
+              </Button>
+            )}
           </Box>
         </Box>
       </Box>
